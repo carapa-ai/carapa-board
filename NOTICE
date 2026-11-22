@@ -1,0 +1,70 @@
+carapa-board
+Copyright 2026 Regun Software SRL
+
+This software is licensed under the PolyForm Noncommercial License 1.0.0.
+See the LICENSE file for the full license text.
+
+========================================================================
+Attribution
+
+This project is a derivative work of NanoClaw
+(https://github.com/qwibitai/nanoclaw), originally released under the
+MIT License. All modifications and additions in this project are
+Copyright 2026 Regun Software SRL and are licensed under the PolyForm
+Noncommercial License 1.0.0.
+
+The original MIT License text is reproduced below as required by its terms:
+
+MIT License
+
+Copyright (c) 2026 Gavriel
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+========================================================================
+Third-party components
+
+Playwright viewer bundle
+  Path: ui/public/browser-viewer/upstream/
+  From: the carapa-playwright fork (https://github.com/carapa-ai/playwright,
+    branch carapa-browser-viewer-1.66) of Microsoft Playwright
+    (https://github.com/microsoft/playwright)
+  Source commit: 58ef715f610229f18c3e332be2e8f01926094122
+  License: Apache License 2.0; the license text is in
+    ui/public/browser-viewer/upstream/LICENSE
+  Version: recorded in ui/public/browser-viewer/version.json
+
+The fork adds Carapa viewer changes (sidebars, viewport presets, custom select
+menus, audio). This bundle is built from the Playwright dashboard sources of
+that fork, checked out at the path named by PLAYWRIGHT_ROOT
+(scripts/build-browser-viewer.sh). During vendoring
+(scripts/vendor-browser-viewer.py) its asset URLs are rewritten to relative
+paths and its default mode is switched from read-only to interactive.
+
+This component remains under the Apache License 2.0 and is not covered by the
+PolyForm Noncommercial License 1.0.0 that applies to the rest of this project.
+
+Playwright's own NOTICE text:
+
+  Playwright
+  Copyright (c) Microsoft Corporation
+
+  This software contains code derived from the Puppeteer project
+  (https://github.com/puppeteer/puppeteer), available under the Apache 2.0
+  license (https://github.com/puppeteer/puppeteer/blob/master/LICENSE).

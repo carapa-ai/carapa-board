@@ -1,0 +1,1 @@
+{"sessionId":"gemini-native-sanitized","startTime":"2026-08-26T10:00:00Z","messages":[{"id":"user-gn1","type":"user","content":"Native Gemini question","timestamp":"2026-08-26T10:00:00Z"},{"id":"assistant-gn1","type":"gemini","content":"Native Gemini answer","timestamp":"2026-08-26T10:00:01Z","tokens":{"input":4,"output":2}}]}

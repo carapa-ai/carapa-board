@@ -1,0 +1,198 @@
+# Operator-only deployment: copy this file into a private directory outside
+# every sandbox mount, keep .env beside it, and set CARAPA_BOARD_SOURCE_DIR to
+# this checkout plus CARAPA_BOARD_SECCOMP_PROFILE / WEB_BROWSER_SECCOMP_PROFILE
+# to private copies of the seccomp profiles. Compose then never reads
+# agent-editable deployment files. The setup skill's quick-install.sh does this.
+services:
+  carapa-board:
+    build:
+      context: ${CARAPA_BOARD_SOURCE_DIR:-.}
+      target: ${CARAPA_BUILD_TARGET:-deploy}
+    image: carapa-board:latest
+    container_name: carapa-board
+    restart: unless-stopped
+    user: '${RELAY_UID:-1000}:${RELAY_GID:-1000}'
+    ports:
+      - '${CARAPA_BOARD_BIND:-127.0.0.1}:3000:3000'
+    security_opt:
+      - no-new-privileges:true
+      - seccomp:${CARAPA_BOARD_SECCOMP_PROFILE:-./security/seccomp-web.json}
+      #- apparmor=carapabox-board
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      # /tmp also backs the Android OTA build worktree; 64M overflowed as the
+      # UI grew (ENOSPC during vite build / packaging).
+      - /tmp:size=256M,noexec,nosuid,nodev,uid=1000,gid=1000
+      - /run:size=16M,noexec,nosuid,nodev,uid=1000,gid=1000
+    deploy:
+      resources:
+        limits:
+          cpus: '8.0'
+          memory: 5120M
+          pids: 8192
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    volumes:
+      # Runtime data — CARAPA_DATA_DIR moves data/, store/, groups/ outside the project.
+      # Defaults to "." (project root) when unset, so ./data, ./store, ./groups.
+      - ${CARAPA_DATA_DIR:-${CARAPA_BOARD_SOURCE_DIR:-.}}/data:/app/data
+      - ${CARAPA_DATA_DIR:-${CARAPA_BOARD_SOURCE_DIR:-.}}/groups:/app/groups
+      - ${CARAPA_DATA_DIR:-${CARAPA_BOARD_SOURCE_DIR:-.}}/store:/app/store
+      - ${CARAPA_DATA_DIR:-${CARAPA_BOARD_SOURCE_DIR:-.}}/data/ipc:/app/ipc
+      - ${CARAPA_DATA_DIR:-${CARAPA_BOARD_SOURCE_DIR:-.}}/knowledge:/app/knowledge
+      - ${CARAPA_BOARD_SOURCE_DIR:-.}/logs:/app/logs
+      - ./.env:/app/.env:ro
+
+      # Optional local Codex history for admin-triggered codex:// thread imports.
+      # Mount Codex homes read-only; the importer reads sessions/ and session_index.jsonl.
+      #- ${CODEX_IMPORT_SESSIONS_HOST_DIR:-./data/codex-import}:/app/codex-import:ro
+      #- ${AGENT_HOME:-./data/codex-agent-home}/.codex:/app/codex-agent-import:ro
+      # Optional local Claude history for the bulk native-conversation importer.
+      # Mount Claude homes read-only; the importer reads projects/**/*.jsonl.
+      #- ${CLAUDE_IMPORT_SESSIONS_HOST_DIR:-./data/claude-import}:/app/claude-import:ro
+      #- ${AGENT_HOME:-./data/codex-agent-home}/.claude:/app/claude-agent-import:ro
+      # Keep the embedded Playwright dashboard independently updatable. Only
+      # this subtree is overlaid; the rest of the Board UI remains image-owned.
+      #- ${BROWSER_VIEWER_DIR:-./ui/public/browser-viewer}:/app/ui/dist/browser-viewer:ro
+    secrets:
+      - carapa_box_api_token
+      - postgres_password
+      - web_browser_sidecar_token
+    env_file:
+      - .env
+    environment:
+      - SECRETS_DIR=/run/secrets
+      - CARAPA_BOX_URL=http://host.docker.internal:3100
+      - MCP_WHATSAPP_URL=http://carapa-wa-link-carapawalink-1:3467/mcp
+      # Inside the container, data dirs are always under /app
+      - CARAPA_DATA_DIR=/app
+      - CODEX_IMPORT_HOME=/app/codex-import
+      - CODEX_IMPORT_AGENT_HOME=/app/codex-agent-import
+      - CARAPA_LOCAL_IP=${CARAPA_LOCAL_IP:-192.168.1.10}
+      # Host-side groups path for sandbox container bind mounts
+      - CARAPA_GROUPS_HOST_DIR=${CARAPA_DATA_DIR:-${CARAPA_BOARD_SOURCE_DIR:-.}}/groups
+      - NO_PROXY=localhost,127.0.0.1,gitnexus-hub,hub
+      - POSTGRES_USER=${DB_USER:-carapa}
+      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
+      - POSTGRES_DB=${DB_NAME:-carapa}
+      - POSTGRES_HOST=postgres
+      # Rotated copy of the board log in the ./logs mount (see .env.example).
+      - LOG_FILE=/app/logs/board.log
+    networks:
+      - default
+      - board_walink
+      - egress_proxy
+      - browser_egress
+    logging:
+      driver: 'json-file'
+      options:
+        tag: 'carapaboard'
+        max-size: '${LOG_MAX_SIZE:-10m}'
+        max-file: '${LOG_MAX_FILES:-5}'
+    depends_on:
+      - postgres
+
+  # Browser-only reuse of the CarapaBot image. No agent entrypoint or mounts.
+  web-browser:
+    image: ${WEB_BROWSER_IMAGE:-carapa-bot-agent:latest}
+    entrypoint: ['bun', '/app/browser-service/server.ts']
+    command: []
+    user: '1000:1000'
+    working_dir: /tmp
+    init: true
+    restart: unless-stopped
+    runtime: runsc
+    read_only: true
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+      - seccomp:${WEB_BROWSER_SECCOMP_PROFILE:-../carapa-box/security/seccomp-default.json}
+      - apparmor=carapabox-agent
+    environment:
+      HOME: /tmp
+      HTTP_PROXY: ''
+      HTTPS_PROXY: ''
+      ALL_PROXY: ''
+      http_proxy: ''
+      https_proxy: ''
+      all_proxy: ''
+      PLAYWRIGHT_MCP_PROXY_SERVER: ''
+      WEB_BROWSER_MAX_SESSIONS: ${WEB_BROWSER_MAX_SESSIONS:-4}
+      WEB_BROWSER_AGENT_TIMEOUT_MS: ${WEB_BROWSER_AGENT_TIMEOUT_MS:-90000}
+      WEB_BROWSER_TAB_MAX_SESSIONS: ${WEB_BROWSER_TAB_MAX_SESSIONS:-2}
+      WEB_BROWSER_TAB_LEASE_MS: ${WEB_BROWSER_TAB_LEASE_MS:-1200000}
+    volumes:
+      - ${CARAPA_BOARD_SOURCE_DIR:-.}/src/modules/web/sidecar:/app/browser-service:ro
+    secrets:
+      - web_browser_sidecar_token_sha256
+    tmpfs:
+      - /tmp:size=1G,nosuid,nodev,uid=1000,gid=1000
+      - /run:size=16M,nosuid,nodev,uid=1000,gid=1000
+    networks: [browser_egress]
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'bun',
+          '-e',
+          'fetch("http://127.0.0.1:3210/health").then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 4G
+          pids: 1024
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: carapa-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${DB_USER:-carapa}
+      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
+      - POSTGRES_DB=${DB_NAME:-carapa}
+    volumes:
+      - ${CARAPA_DATA_DIR:-${CARAPA_BOARD_SOURCE_DIR:-.}}/store/postgres:/var/lib/postgresql/data
+    secrets:
+      - postgres_password
+    networks:
+      - default
+    ports:
+      - '${CARAPA_BOARD_DB_BIND:-127.0.0.1}:5433:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  # Direct egress by operator choice; this does not block host/LAN destinations.
+  browser_egress:
+  board_walink:
+    name: board_walink
+  egress_proxy:
+    external: true
+    name: egress_proxy
+
+# File-based secrets — mounted at /run/secrets/<name> (tmpfs, not in docker inspect).
+secrets:
+  # Only the digest enters the browser container; CDP cannot read a usable management credential.
+  web_browser_sidecar_token_sha256:
+    file: ${SECRETS_DIR}/web_browser_sidecar_token_sha256
+  web_browser_sidecar_token:
+    file: ${SECRETS_DIR}/web_browser_sidecar_token
+  carapa_box_api_token:
+    file: ${SECRETS_DIR}/carapa_box_api_token
+  postgres_password:
+    file: ${SECRETS_DIR}/postgres_password

@@ -1,0 +1,132 @@
+{
+  "files": {
+    "src/agent-runner.ts": {
+      "max": 4,
+      "reason": "board-owned only (seeded from GFS-10 counts, audit pending)"
+    },
+    "src/config.ts": {
+      "max": 4,
+      "reason": "board-owned only"
+    },
+    "src/lib/editable-local-file.ts": {
+      "max": 15,
+      "reason": "descriptor-based"
+    },
+    "src/lib/file-content.ts": {
+      "max": 5,
+      "reason": "mixed descriptor-based and path-based calls (audit pending)"
+    },
+    "src/lib/file-thumbnail.ts": {
+      "max": 5,
+      "reason": "board-owned only (seeded from GFS-10 counts, audit pending)"
+    },
+    "src/modules/chat/scheduling/task-scheduler.ts": {
+      "max": 4,
+      "reason": "board-owned only"
+    },
+    "src/modules/memory/history-reflection.ts": {
+      "max": 1,
+      "reason": "board-owned only (seeded from GFS-10 counts, audit pending)"
+    },
+    "src/modules/memory/project-history-reflection-batch.ts": {
+      "max": 2,
+      "reason": "board-owned only (seeded from GFS-10 counts, audit pending)"
+    },
+    "src/modules/memory/tool-reflector.ts": {
+      "max": 6,
+      "reason": "board-owned only (seeded from GFS-10 counts, audit pending)"
+    },
+    "src/modules/objectives/objective-folder.ts": {
+      "max": 2,
+      "reason": "board-owned only (seeded from GFS-10 counts, audit pending)"
+    },
+    "src/modules/proposals/safe-fs.ts": {
+      "max": 7,
+      "reason": "descriptor-based"
+    },
+    "src/modules/proposals/targets.ts": {
+      "max": 4,
+      "reason": "descriptor-based"
+    },
+    "src/modules/transcripts/archive-restore.ts": {
+      "max": 3,
+      "reason": "board-owned only (seeded from GFS-10 counts, audit pending)"
+    },
+    "src/modules/transcripts/archive-safety.ts": {
+      "max": 5,
+      "reason": "board-owned only (seeded from GFS-10 counts, audit pending)"
+    },
+    "src/modules/transcripts/chat-transcript-erase.ts": {
+      "max": 5,
+      "reason": "board-owned only (seeded from GFS-10 counts, audit pending)"
+    },
+    "src/modules/transcripts/codex-thread-import.ts": {
+      "max": 5,
+      "reason": "board-owned only (seeded from GFS-10 counts, audit pending)"
+    },
+    "src/modules/transcripts/native-import-apply.ts": {
+      "max": 1,
+      "reason": "board-owned only (seeded from GFS-10 counts, audit pending)"
+    },
+    "src/modules/transcripts/native-v1-import.ts": {
+      "max": 9,
+      "reason": "board-owned only (seeded from GFS-10 counts, audit pending)"
+    },
+    "src/modules/transcripts/transcript-append-service.ts": {
+      "max": 23,
+      "reason": "mixed descriptor-based and path-based calls (audit pending)"
+    },
+    "src/modules/transcripts/transcript-fs-safe.ts": {
+      "max": 4,
+      "reason": "sandbox CLI bundle"
+    },
+    "src/modules/transcripts/transcript-store.ts": {
+      "max": 10,
+      "reason": "board-owned only (seeded from GFS-10 counts, audit pending)"
+    },
+    "src/prompt-loader.ts": {
+      "max": 3,
+      "reason": "board-owned only (seeded from GFS-10 counts, audit pending)"
+    },
+    "src/recovery.ts": {
+      "max": 31,
+      "reason": "ipc (pending IPC chain)"
+    },
+    "src/routes/conversations.ts": {
+      "max": 8,
+      "reason": "board-owned only (seeded from GFS-10 counts, audit pending)"
+    },
+    "src/routes/objectives.ts": {
+      "max": 7,
+      "reason": "board-owned only (seeded from GFS-10 counts, audit pending)"
+    },
+    "src/routes/projects.ts": {
+      "max": 2,
+      "reason": "board-owned only (seeded from GFS-10 counts, audit pending)"
+    },
+    "src/sandbox/disabled-skills.ts": {
+      "max": 6,
+      "reason": "descriptor-based"
+    },
+    "src/sandbox/ipc-replica.ts": {
+      "max": 8,
+      "reason": "board-owned replica state, marker and tree enumeration"
+    },
+    "src/sandbox/process.ts": {
+      "max": 54,
+      "reason": "ipc (pending IPC chain)"
+    },
+    "src/state-manager.ts": {
+      "max": 14,
+      "reason": "board-owned only (seeded from GFS-10 counts, audit pending)"
+    }
+  },
+  "pathHelpers": [
+    "src/modules/transcripts/transcript-append-service.ts",
+    "src/modules/transcripts/archive-restore.ts",
+    "src/modules/transcripts/archive-safety.ts",
+    "src/lib/file-tree.ts",
+    "src/lib/file-content.ts",
+    "src/lib/file-thumbnail.ts"
+  ]
+}

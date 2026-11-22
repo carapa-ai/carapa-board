@@ -1,0 +1,10 @@
+# Optional GitNexus integration (disabled by default). Requires a running
+# GitNexus hub; see docs/gitnexus-integration.md.
+#   docker compose -f docker-compose.yml -f docker-compose.gitnexus.yml up -d
+services:
+  carapa-board:
+    environment:
+      - ENABLE_GITNEXUS=true
+      - GITNEXUS_URL=${GITNEXUS_URL:-http://hub:4848}
+    volumes:
+      - ${GITNEXUS_DATA_DIR:-../gitnexus-hub/.gitnexus}:/app/data/gitnexus:ro

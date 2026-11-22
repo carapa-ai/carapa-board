@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!--
+      The base-config defines global trust rules. No server certificate is
+      bundled, so one APK works for every board:
+      - system: publicly trusted certificates (Let's Encrypt, tunnels).
+      - user: a private certificate authority the device owner installed in
+        Android Settings (home CA behind a reverse proxy).
+      A board with a single self-signed certificate is trusted through the
+      per-server pin from the pairing link (CarapaTls), not through this file.
+    -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+
+    <!--
+      Domain-specific overrides.
+      Only needed if you want to allow insecure (HTTP) traffic,
+      which we don't for the local board IP.
+    -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">localhost</domain>
+        <domain includeSubdomains="true">127.0.0.1</domain>
+    </domain-config>
+</network-security-config>

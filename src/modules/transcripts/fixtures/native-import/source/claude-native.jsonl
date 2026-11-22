@@ -1,0 +1,2 @@
+{"type":"user","sessionId":"claude-native-sanitized","uuid":"user-n1","cwd":"/repos/example","timestamp":"2026-08-26T10:00:00Z","message":{"content":"Native question"}}
+{"type":"assistant","sessionId":"claude-native-sanitized","uuid":"assistant-n1","cwd":"/repos/example","timestamp":"2026-08-26T10:00:01Z","message":{"id":"assistant-n1","model":"claude-test","content":[{"type":"text","text":"Native answer"}],"usage":{"input_tokens":5,"output_tokens":2}}}

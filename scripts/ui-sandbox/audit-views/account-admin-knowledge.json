@@ -1,0 +1,148 @@
+{
+  "views": [
+    {
+      "name": "account-preferences",
+      "route": "/account",
+      "ready": "[data-ui=theme-select]",
+      "steps": [
+        { "click": "[data-ui=theme-select]" },
+        { "click": "[role=option]:has-text(\"Light\")" },
+        { "wait": 300 }
+      ],
+      "focusWalk": false
+    },
+    {
+      "name": "account-devices",
+      "route": "/account",
+      "ready": "[role=tab]:has-text(\"Devices\")",
+      "steps": [
+        { "click": "[role=tab]:has-text(\"Devices\")" },
+        { "wait": 500 }
+      ],
+      "focusWalk": false
+    },
+    {
+      "name": "account-security",
+      "route": "/account",
+      "ready": "[role=tab]:has-text(\"Security\")",
+      "steps": [
+        { "click": "[role=tab]:has-text(\"Security\")" },
+        { "wait": 500 }
+      ],
+      "focusWalk": false
+    },
+    {
+      "name": "admin-ai-users",
+      "route": "/admin/ai-users",
+      "focusWalk": false
+    },
+    { "name": "admin-devices", "route": "/admin/devices", "focusWalk": false },
+    {
+      "name": "admin-mcp-connections",
+      "route": "/admin/mcp-connections",
+      "focusWalk": false
+    },
+    {
+      "name": "admin-provider-accounts",
+      "route": "/admin/provider-accounts",
+      "focusWalk": false
+    },
+    { "name": "users", "route": "/users", "focusWalk": false },
+    { "name": "knowledge", "route": "/knowledge", "focusWalk": false },
+    { "name": "memory-review", "route": "/memory-review", "focusWalk": false },
+    {
+      "name": "share-public",
+      "route": "/share/audit-token",
+      "mocks": [
+        {
+          "url": "/api/public/conversations/audit-token/visitor-session",
+          "status": 200,
+          "json": { "csrfToken": "csrf", "displayName": "Guest" }
+        },
+        {
+          "url": "/api/public/conversations/audit-token",
+          "status": 200,
+          "json": {
+            "conversation": {
+              "title": "Shared conversation",
+              "liveMode": false,
+              "ttsEnabled": false,
+              "visitorPromptingEnabled": true,
+              "promptMaxChars": 500
+            },
+            "messages": [
+              {
+                "id": "m1",
+                "role": "user",
+                "content": "Hello there",
+                "createdAt": "2026-11-09T10:00:00.000Z",
+                "displayName": "Guest",
+                "personaTitle": null,
+                "isPersona": false,
+                "avatarUrl": null,
+                "speechAvailable": false,
+                "speech": null,
+                "attachments": []
+              },
+              {
+                "id": "m2",
+                "role": "assistant",
+                "content": "Hi! How can I help?",
+                "createdAt": "2026-11-09T10:00:05.000Z",
+                "displayName": "Assistant",
+                "personaTitle": "Helper",
+                "isPersona": true,
+                "avatarUrl": null,
+                "speechAvailable": false,
+                "speech": null,
+                "attachments": []
+              }
+            ],
+            "total": 2,
+            "hasMore": false,
+            "nextOffset": 2
+          }
+        }
+      ],
+      "focusWalk": false
+    },
+    {
+      "name": "oauth-consent",
+      "route": "/oauth/consent?request=audit-req",
+      "mocks": [
+        {
+          "url": "/api/oauth/requests/audit-req",
+          "status": 200,
+          "json": {
+            "id": "audit-req",
+            "client": { "id": "c1", "name": "Audit Client" },
+            "redirectHost": "client.example.com",
+            "resource": "https://board.example.com/mcp",
+            "expiresAt": "2099-01-01T00:00:00.000Z",
+            "choices": {
+              "targets": [
+                {
+                  "kind": "main",
+                  "folder": "main",
+                  "name": "Main workspace",
+                  "isParent": true,
+                  "canWrite": true
+                },
+                {
+                  "kind": "project",
+                  "folder": "ui-running",
+                  "name": "ui-running",
+                  "isParent": false,
+                  "canWrite": true
+                }
+              ],
+              "access": ["read", "write"],
+              "days": [1, 7, 30]
+            }
+          }
+        }
+      ],
+      "focusWalk": false
+    }
+  ]
+}

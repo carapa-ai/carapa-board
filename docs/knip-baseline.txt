@@ -1,0 +1,634 @@
+knip baseline (snapshot, not maintained)
+=========================================
+Date:    2026-11-22
+Commit:  run taken on the config card branch tip f844f752 (on top of 7563c842); the config file was then renamed back from knip.jsonc to knip.json with identical content (the run output is unchanged)
+Command: bun run knip   (config: knip.json; exit code 1 because findings remain)
+
+This file is a point-in-time snapshot of the knip output, not a gate. It is not
+updated automatically. knip is not part of verify, verify:changed or CI.
+
+Reading the report
+------------------
+- Test files (*.test.ts, *.vitest.ts[x]) are entry points, so an export that a test
+  imports counts as used. knip does not follow `runner = await import(...)` in tests,
+  so some of the "Unused exports" below are used by tests through a dynamic import.
+- `bunx knip --production` ignores tests and lists exports that only tests use
+  (809 exports at the start of this card). That list was the source of the deletions.
+- ui/src deletions and unused npm dependencies are left to a later card.
+- Entry points declared in knip.json include the files that scripts and tests load by path:
+  src/**/*.integration.ts (run by scripts/test-file-groups.sh),
+  src/modules/transcripts/transcripts-main.ts (bundled by scripts/build-transcripts-skill.ts),
+  and ui/src/**/*-browser-harness.tsx (loaded by string import() in the *.browser.test.ts suites).
+  No unused file is left (src/modules/memory/inspection-tools.ts was deleted after this run).
+- knip.json also declares the entry points that nothing imports by a static path:
+  src/modules/whatsapp/index.ts (imported through a variable in src/index.ts),
+  src/modules/web/sidecar/server.ts (started by docker-compose.yml), src/test-preload.ts
+  (bunfig.toml preload), **/__fixtures__/**, ui/index.html and ui/src/test/setup.ts.
+  The other modules (whisper, vector-store, objectives, web, knowledge, gitnexus, tts, live-voice)
+  are imported statically by src/index.ts. Tool exports collected through `import * as` in
+  src/modules/tools/registry.ts are not reported as unused. One of them,
+  setProjectWorktreeIsolationTool, still shows up under "Duplicate exports" as an alias of
+  setProjectTaskCheckoutModeTool; that is a real finding (see "Remaining false positives").
+- `tailwindcss` (ui devDependency, used by `@import 'tailwindcss'` in ui/src/global.css) and the
+  system binaries flock, sha256sum and ffmpeg are now ignored in knip.json, each with a comment.
+- `@types/dompurify` under "Unused dependencies" is a real finding: dompurify 3.x ships its own types.
+- "Unlisted dependencies" are real gaps: express-rate-limit is imported by src/ but appears in
+  package.json only under "overrides" (not in dependencies or devDependencies), and ui/ imports
+  highlight.js without listing it.
+
+Kept (not deleted), by reason required by the card
+--------------------------------------------------
+Test seam (names ending in ForTests/ForTest, __test__, __set*, or setters/resetters/barriers
+that exist only for tests):
+  drizzleDb (src/db.ts), setDescriptionDraftInvoker, resetWebScreeningCache,
+  clearAvatarGenerationStates, setExternalPrivacyErasureEnabled,
+  setPublicPersonaTurnOverride, setDirectPendingReceiptTestBarrier (src/routes/conversations.ts),
+  resetTestingFailureCount, and every export named *ForTests / *ForTest / __test__ / __set*
+  (setContainerAgentRunnerForTests, setChatReflectionSchedulerForTests, ...).
+Loaded dynamically (registry keyed by name, string import(), module namespace walk):
+  everything under src/modules/whatsapp/ and the other modules the module loader imports
+  by name; tools registered through `import * as ... from './core-tools.js'` (namespace import).
+Voice / Live Mode / TTS / STT / audio:
+  excluded from the candidate list by path or name (src/modules/live-voice, tts, whisper,
+  src/lib/audio-*, meeting-*).
+
+Not deleted because the ~300 changed-line cap was reached (src/ changes: 303 lines)
+------------------------------------------------------------------------------------
+These are test-only exports (no production caller) and remain candidates for a later card.
+Deleting them would also remove tests, and the tests of the first three groups cover live
+behaviour, so retarget those assertions before deleting.
+Test fixture or assertion helper (a test seeds or reads state through it):
+  getProjectMemberships, getConversationSessionMode, finishConversationWorktree,
+  linkStageEntryEventRun, markStageEntryEventSucceeded, getTaskRunLogs, getAgentAsk,
+  setUserDisabled, insertObjectiveConversationRow, resolveMainPersonaSessionGeneration,
+  writeAiUserEmote, removeAiUserEmote, projectSetupRevisionFor, signAgentJwt, notifyUserTool.
+Async twin or thin wrapper of a live function:
+  appendFileAt, writeGroupFile (src/lib/group-fs.ts), readNoFollow (transcript-fs-safe.ts),
+  parseMemoryCapsuleJudgeSelection, memoryCapsuleTokenBudget (memory-capsule.ts),
+  stripTestingDecision (kanban/testing.ts).
+Release signing path (tests protect it end to end):
+  publishAndroidOtaCandidateFiles (src/lib/android-ota.ts).
+
+Not deletable (still called inside their own file):
+  roughly 490 exports with no use outside their own file in production code, whose symbol is
+  also called inside that file. Only the `export` keyword is unused there, so they cannot be
+  removed as symbols; they stay in the knip list.
+
+Before / after this card (same commit, only knip.json changed)
+---------------------------------------------------------------
+Category                 before  after
+Unused files                  1      1
+Unused dependencies           1      1
+Unused devDependencies        1      0   (tailwindcss: config false positive, now ignored)
+Unlisted dependencies         4      4
+Unlisted binaries             3      0   (flock, sha256sum, ffmpeg: system binaries, now ignored)
+Unused exports              319    319
+Unused exported types       158    158
+Duplicate exports             5      5
+Configuration hints          17     19   (advisory, see below)
+
+Remaining false positives (not fixable in the config)
+-----------------------------------------------------
+- Unused exports that a test reaches only through `await import(...)` of a computed or runtime
+  loaded path (see "Reading the report"): knip cannot see the use.
+- Unused exports listed under "Test seam" above: kept on purpose, they exist for tests and the
+  test files that call them are entry points only when imported statically.
+- Duplicate exports `claimTaskExecution|_testOnlyTryClaimTaskExecution`,
+  `releaseTaskExecutionClaim|_testOnlyReleaseTaskExecutionClaim`,
+  `ensureAvatarThumbnail|ensureAiUserAvatarThumbnail`,
+  `setProjectTaskCheckoutModeTool|setProjectWorktreeIsolationTool` (src/modules/project-setup/tools.ts):
+  intentional aliases (test seams or legacy names that only tests use); not deleted in this card.
+  The last one is an alias export in a registry-collected file, not a registry tool missing from
+  the registry: the registry tools themselves are not reported as unused.
+- Configuration hints: knip reports the explicit ignore and entry patterns as redundant or
+  without matches (drizzle/**, data/**, logs/**, store/**, ipc/**, groups/**, .worktrees/**,
+  android/**, dist/**, src/index.ts, ...). They are kept on purpose so the config stays correct
+  if the defaults or the checkout layout change. The `.css` hint is knip's note that CSS
+  imports are not followed.
+Real findings stay in the lists below: @types/dompurify, the unlisted express-rate-limit and highlight.js, the stale
+initGitNexusTools / registerGitNexusResources re-export in src/modules/tools/registry.ts,
+and the duplicate export `knowledgeModule|default` (src/modules/knowledge/index.ts): src/index.ts
+imports `knowledgeModule` by name and nothing reads the default export, so it is a redundant alias.
+
+Summary of the run below
+------------------------
+(knip prints the 'Configuration hints' section on stderr; it is appended after 'Duplicate exports'.)
+Unused files 0, unused dependencies 1, unlisted dependencies 4, unlisted binaries 0,
+unused exports 319, unused exported types 158, duplicate exports 5, configuration hints 19.
+
+=========================================================================================
+knip output
+=========================================================================================
+Unused files (0)
+Unused dependencies (1)
+@types/dompurify  ui/package.json:34:6
+Unlisted dependencies (4)
+express-rate-limit              src/lib/rate-limit.ts:17:8                     
+express-rate-limit              src/routes/public-conversations.ts:5:32        
+highlight.js                    ui/src/components/chat/preview-pane.tsx:1026:12
+highlight.js/styles/github.css  ui/src/lib/hljs-themes.ts:1:28                 
+Unused exports (319)
+setContainerAgentRunnerForTests                            function  src/agent-runner.ts:109:17                         
+appendCurrentHumanContext                                  function  src/agent-runner.ts:123:17                         
+directLlmInspectionEntry                                   function  src/agent-runner.ts:162:17                         
+conversationChannel                                        function  src/agent-runner.ts:202:17                         
+extractPlanArtifactFromTranscript                          function  src/agent-runner.ts:375:17                         
+isDirectLlmPersonaAgent                                    function  src/agent-runner.ts:470:17                         
+setChatReflectionSchedulerForTests                         function  src/agent-runner.ts:1689:17                        
+parseMeetingLanguages                                                src/config.ts:6:10                                 
+parseMaxHandoffLength                                      function  src/config.ts:61:17                                
+MCP_WHATSAPP_STACK                                                   src/config.ts:317:14                               
+SERVICE_WATCHER_DEFAULT_INTERVAL_MS                                  src/config.ts:427:14                               
+SERVICE_WATCHER_MIN_INTERVAL_MS                                      src/config.ts:428:14                               
+resolveServiceWatcherInterval                              function  src/config.ts:430:17                               
+MAX_UNAPPROVED_OAUTH_CLIENTS                                         src/db/oauth.ts:29:14                              
+computeMigrationTemplateKey                                function  src/db/pglite-template.ts:38:17                    
+androidOtaContentFingerprint                               function  src/lib/android-ota.ts:195:17                      
+ollamaApiOrigin                                            function  src/lib/audio-for-llm.ts:42:17                     
+jwtTokenVersion                                            function  src/lib/auth-jwt.ts:139:17                         
+credentialPath                                                       src/lib/carapa-device-client.ts:14:14              
+boardOrigin                                                function  src/lib/carapa-device-client.ts:16:17              
+MAX_THUMBNAIL_PIXELS                                                 src/lib/file-thumbnail.ts:13:14                    
+FolderRetiredError                                         class     src/lib/folder-identity.ts:50:14                   
+PROTECTED_PATH_MESSAGE                                               src/lib/group-file-ops.ts:73:14                    
+canonicalMediaUrl                                          function  src/lib/media-tickets.ts:59:17                     
+DEFAULT_MEETING_LANGUAGES_RAW                                        src/lib/meeting-languages.ts:22:14                 
+meetingLanguageLabel                                       function  src/lib/meeting-languages.ts:64:17                 
+FLUSH_INTERVAL_MS                                                    src/lib/meeting-recordings.ts:22:14                
+normalizeTranscriptChunk                                   function  src/lib/meeting-transcript.ts:7:17                 
+dominantScript                                             function  src/lib/meeting-transcript.ts:14:17                
+stripCyrillicRuns                                          function  src/lib/meeting-transcript.ts:28:17                
+collapseInternalPhraseRepetition                           function  src/lib/meeting-transcript.ts:103:17               
+collapseImmediateRepetition                                function  src/lib/meeting-transcript.ts:174:17               
+stripPrefixOverlap                                         function  src/lib/meeting-transcript.ts:229:17               
+telemetryCostIsEstimated                                   function  src/lib/model-pricing.ts:138:17                    
+TIER_MIN_CONFIDENCE                                                  src/lib/model-router.ts:29:14                      
+SENSITIVE_FRONTIER_THRESHOLD                                         src/lib/model-router.ts:31:14                      
+ROUTING_MAX_TIMEOUT_MS                                               src/lib/model-router.ts:33:14                      
+OAUTH_MCP_PATHS                                                      src/lib/oauth/origins.ts:11:14                     
+OAUTH_RESOURCE_NAMES                                                 src/lib/oauth/origins.ts:14:14                     
+normalizeRoutePath                                         function  src/lib/oauth/origins.ts:60:17                     
+assertDescriptorContained                                  function  src/lib/read-contained-file.ts:29:17               
+SERVER_WEB_BUILD_OUTPUT_LIMIT                                        src/lib/server-web-build-status.ts:51:14           
+deriveTmuxSessionName                                      function  src/lib/tmux-client.ts:1062:17                     
+chatTranscriptPath                                                   src/mcp/mcp-runner.ts:50:10                        
+outputTranscriptPath                                                 src/mcp/mcp-runner.ts:50:30                        
+accountAvatarRelativePath                                  function  src/modules/account/avatar-storage.ts:23:17        
+resolveAccountAvatarPath                                   function  src/modules/account/avatar-storage.ts:34:17        
+AI_USER_AVATAR_THUMBNAIL_SIZE                                        src/modules/ai-users/avatar-thumbnail.ts:4:14      
+publishLiveQueue                                           function  src/modules/ai-users/live-queue.ts:387:23          
+buildInvitedPersonaTurnPrompt                              function  src/modules/ai-users/orchestrator.ts:134:17        
+personaTurnControlInstructions                             function  src/modules/ai-users/orchestrator.ts:347:17        
+stripPersonaSelfAttribution                                function  src/modules/ai-users/orchestrator.ts:376:17        
+hasAutonomousPersonaQuorum                                 function  src/modules/ai-users/orchestrator.ts:823:17        
+aiUserRelativePath                                         function  src/modules/ai-users/storage.ts:31:17              
+stripPersonaEmoteControl                                   function  src/modules/ai-users/talking-stick.ts:49:17        
+hashBoxToken                                               function  src/modules/boxes/registry.ts:44:17                
+boxIdForArgs                                               function  src/modules/boxes/routing.ts:73:17                 
+boxFetch                                                   function  src/modules/boxes/routing.ts:130:17                
+ARTIFACT_THUMBNAIL_MAX_SIZE                                          src/modules/chat/artifact-thumbnails.ts:11:14      
+renewConversationExecutionLease                            function  …odules/chat/conversation-execution-lease.ts:174:23
+MAX_EXPORT_IMAGE_BYTES                                               src/modules/chat/conversation-export.ts:26:14      
+MAX_EXPORT_TOTAL_BYTES                                               src/modules/chat/conversation-export.ts:28:14      
+conversationTitleContext                                   function  src/modules/chat/conversation-title.ts:72:17       
+normalizeConversationTitle                                 function  src/modules/chat/conversation-title.ts:109:17      
+runDirectConversationTurn                                  function  src/modules/chat/direct-followups.ts:665:23        
+isLiveStatusPlaceholder                                    function  src/modules/chat/live-activity.ts:26:17            
+collectKnownPublicSecrets                                  function  src/modules/chat/public-content-safety.ts:63:17    
+isDatasetRow                                               function  src/modules/kanban/dataset-validation.ts:12:17     
+DESCRIPTION_DRAFT_MAX_TOKENS                                         src/modules/kanban/description-draft.ts:22:14      
+buildDescriptionDraftPrompt                                function  src/modules/kanban/description-draft.ts:82:17      
+FAILURE_CLASSES                                                      src/modules/kanban/failure-class.ts:9:14           
+runIssueImportPoll                                         function  src/modules/kanban/issue-import.ts:454:23          
+deniedPipelineOwnedValueKeys                               function  src/modules/kanban/pipeline-owned-values.ts:94:17  
+getOccupiedRemovedStages                                   function  src/modules/kanban/stage-configuration.ts:21:23    
+stageRemovalConflictMessage                                function  src/modules/kanban/stage-configuration.ts:42:17    
+VARIANT_SUFFIX_PATTERN                                               src/modules/kanban/stages.ts:23:14                 
+deriveTaskPhase                                            function  src/modules/kanban/task-phase.ts:40:17             
+pollHostBuild                                              function  src/modules/kanban/task/deploy.ts:598:23           
+buildMergeConflictReworkPrompt                             function  …es/kanban/task/merge-conflict-resolution.ts:139:17
+MAX_MERGE_RETRIES_PER_CARD                                           src/modules/kanban/task/merge-retry.ts:54:14       
+MAX_MERGE_RETRIES_PER_PASS                                           src/modules/kanban/task/merge-retry.ts:55:14       
+MERGE_RETRY_NOTICE_PREFIX                                            src/modules/kanban/task/merge-retry.ts:59:14       
+MERGE_RISK_CONFIG_PATH                                               src/modules/kanban/task/merge-risk-gate.ts:33:14   
+buildApprovalRequiredNotice                                function  src/modules/kanban/task/merge-risk-gate.ts:349:17  
+formatRuntimeSelectionLabel                                function  src/modules/kanban/task/review-chain.ts:175:17     
+TASK_COST_LIMIT_KEY                                                  src/modules/kanban/task/task-cost-limit.ts:18:14   
+TASK_COST_LIMIT_HIT_KEY                                              src/modules/kanban/task/task-cost-limit.ts:20:14   
+effectiveTaskCostLimitUsd                                  function  src/modules/kanban/task/task-cost-limit.ts:31:17   
+buildTestingFormatRepairFallbackPrompt                     function  src/modules/kanban/testing.ts:577:17               
+default                                                    variable  src/modules/knowledge/index.ts:17:16               
+directLlmEndpoint                                          function  src/modules/knowledge/knowledge-service.ts:193:17  
+normalizeLiveVoiceLanguage                                 function  src/modules/live-voice/streaming.ts:59:17          
+pcm16ToWav                                                 function  src/modules/live-voice/streaming.ts:127:17         
+getEnabledModules                                          function  src/modules/loader.ts:20:17                        
+normalizeMailMessage                                       function  src/modules/mail/service.ts:122:17                 
+PgMemoryBackend                                            class     src/modules/memory/backend/pg-backend.ts:111:14    
+formatMemoryWithEventDate                                  function  src/modules/memory/embed-text.ts:8:17              
+DEFAULT_RRF_K                                                        src/modules/memory/fusion.ts:14:14                 
+VECTOR_RECONCILE_BATCH                                               src/modules/memory/graph-invalidation.ts:56:14     
+VECTOR_RECONCILE_MAX_PER_PASS                                        src/modules/memory/graph-invalidation.ts:59:14     
+VECTOR_BACKFILL_MAX_PER_GROUP                                        src/modules/memory/graph-invalidation.ts:234:14    
+VECTOR_BACKFILL_MAX_PER_PASS                                         src/modules/memory/graph-invalidation.ts:237:14    
+backfillMissingVectors                                     function  src/modules/memory/graph-invalidation.ts:257:23    
+normalizeIso                                               function  …c/modules/memory/history-reflector-core.ts:1312:17
+HISTORY_REVIEW_VERSION                                               src/modules/memory/history-review.ts:45:14         
+writeHistoryMemoryEvalRecords                              function  src/modules/memory/history-review.ts:1381:17       
+JEV_QUESTION_VERSION                                                 src/modules/memory/jev-relevance.ts:33:14          
+computeJevAgreement                                        function  src/modules/memory/jev-relevance.ts:132:17         
+MAX_DEDUP_BUCKET                                                     src/modules/memory/maintenance.ts:53:14            
+MEMORY_AUDIT_MIN_VECTOR_SIMILARITY                                   src/modules/memory/memory-audit-clustering.ts:4:14 
+memoryAuditJsonFailureDiagnostic                           function  src/modules/memory/memory-audit-json.ts:81:17      
+memoryAuditJsonRepairPrompt                                function  src/modules/memory/memory-audit-json.ts:113:17     
+MemoryAuditBatchSkipError                                  class     src/modules/memory/memory-audit.ts:162:14          
+parseQueryPlan                                             function  src/modules/memory/memory-capsule-plan.ts:69:17    
+MEMORY_CONTEXT_LEVELS                                                src/modules/memory/memory-capsule.ts:42:14         
+judgeMemoryCapsuleCandidates                               function  src/modules/memory/memory-capsule.ts:153:23        
+MEMORY_INDEX_MAX_CANDIDATES                                          src/modules/memory/memory-index.ts:8:14            
+LONG_CONTENT_CHARS                                                   src/modules/memory/memory-quality-score.ts:59:14   
+LEAD_SENTENCE_MAX_CHARS                                              src/modules/memory/memory-quality-score.ts:60:14   
+HIGH_IMPORTANCE                                                      src/modules/memory/memory-quality-score.ts:61:14   
+MIN_TAGS                                                             src/modules/memory/memory-quality-score.ts:62:14   
+MAX_TAGS                                                             src/modules/memory/memory-quality-score.ts:63:14   
+NEAR_DUPLICATE_JACCARD                                               src/modules/memory/memory-quality-score.ts:64:14   
+NEAR_DUPLICATE_MAX_ITEMS                                             src/modules/memory/memory-quality-score.ts:65:14   
+MAX_LISTED_IDS                                                       src/modules/memory/memory-quality-score.ts:66:14   
+MAX_LISTED_PAIRS                                                     src/modules/memory/memory-quality-score.ts:67:14   
+safeSegment                                                function  src/modules/memory/native-memory-import.ts:36:17   
+isExternalPrivacyErasureEnabled                            function  src/modules/memory/privacy-erasure.ts:79:17        
+eraseGraphFactsMatchingTargetDurably                       function  src/modules/memory/privacy-erasure.ts:154:23       
+REFLECTOR_GATE_QUESTION_VERSION                                      src/modules/memory/reflector-gate.ts:29:14         
+hasErasureKeyword                                          function  src/modules/memory/reflector-gate.ts:87:17         
+tokenizeSearchTerms                                        function  src/modules/memory/search-terms.ts:19:17           
+QUERY_STOPWORDS                                                      src/modules/memory/search-terms.ts:37:14           
+TOOL_REFLECTOR_TOOL_NAMES                                            src/modules/memory/tool-reflector.ts:82:14         
+sweepPendingTranscriptReflections                          function  src/modules/memory/tool-reflector.ts:2038:23       
+isChatTranscriptPath                                       function  src/modules/memory/transcript-observe.ts:54:17     
+utcDayKey                                                  function  src/modules/memory/transcript-observe.ts:73:17     
+observerMessageDateUtc                                     function  src/modules/memory/transcript-observe.ts:79:17     
+stripToolActivitySegments                                  function  src/modules/memory/transcript-parser.ts:38:17      
+objectiveCostReportPath                                    function  …modules/objectives/objective-cost-report.ts:343:17
+BOX_WATCH_INTERVAL_MS                                                src/modules/objectives/system-events.ts:28:14      
+isSystemEventsEnabled                                      function  src/modules/objectives/system-events.ts:54:17      
+getStagesForGroup                                          function  src/modules/project-setup/project-prompts.ts:53:17 
+promptFilename                                             function  src/modules/project-setup/project-prompts.ts:142:17
+GroupDirConflictError                                      class     src/modules/projects/reparent-project.ts:102:14    
+GroupDirRollbackError                                      class     src/modules/projects/reparent-project.ts:115:14    
+isInlineChatKeyOf                                          function  src/modules/projects/reparent-project.ts:567:17    
+DEFAULT_REPOSITORY_DISCOVERY_DEPTH                                   src/modules/projects/repository-discovery.ts:16:14 
+MAX_REPOSITORY_DISCOVERY_DEPTH                                       src/modules/projects/repository-discovery.ts:17:14 
+DEFAULT_REPOSITORY_DISCOVERY_EXCLUSIONS                              src/modules/projects/repository-discovery.ts:20:14 
+repositoryScanExecutionFailure                             function  src/modules/projects/repository-discovery.ts:239:17
+PROPOSAL_KINDS                                                       src/modules/proposals/actions.ts:21:14             
+MAX_PROPOSAL_BYTES                                                   src/modules/proposals/actions.ts:64:14             
+MAX_PROMPT_CHARS                                                     src/modules/proposals/actions.ts:66:14             
+proposalStatusSchema                                                 src/modules/proposals/actions.ts:70:14             
+promptProposalName                                         function  src/modules/proposals/actions.ts:137:17            
+isSafeItemPath                                             function  src/modules/proposals/actions.ts:172:17            
+hasFrontmatter                                             function  src/modules/proposals/actions.ts:183:17            
+STALE_APPROVAL_RESULT                                                …modules/proposals/merge-approval-decision.ts:28:14
+readItemFiles                                              function  src/modules/proposals/promotion-apply.ts:178:17    
+reapStalePromotionLock                                     function  src/modules/proposals/promotion-apply.ts:362:17    
+PROMOTION_LAYERS                                                     src/modules/proposals/promotion-targets.ts:17:14   
+hashPrompt                                                 function  src/modules/proposals/prompt-proposals.ts:53:17    
+PromptApprovalDenied                                       class     src/modules/proposals/prompt-proposals.ts:181:14   
+CAPACITY_SKIP_PERCENT                                                src/modules/provider-usage/capacity.ts:26:14       
+PROVIDER_USAGE_TTL_MS                                                src/modules/provider-usage/capacity.ts:165:14      
+isToolAuthorized                                           function  src/modules/tools/index.ts:64:17                   
+toolInputSchemaToJsonSchema                                function  src/modules/tools/index.ts:112:17                  
+initGitNexusTools                                                    src/modules/tools/registry.ts:233:3                
+registerGitNexusResources                                            src/modules/tools/registry.ts:234:3                
+isSafeArchiveMember                                        function  src/modules/transcripts/archive-restore.ts:676:17  
+assertRegularFileInside                                    function  src/modules/transcripts/archive-safety.ts:21:17    
+assertParentInside                                         function  src/modules/transcripts/archive-safety.ts:30:17    
+runTarSync                                                 function  src/modules/transcripts/archive-tar.ts:87:17       
+DEFAULT_SEARCH_LIMIT                                                 src/modules/transcripts/reader-commands.ts:21:14   
+transcriptId                                               function  src/modules/transcripts/reader-core.ts:111:17      
+timeFromFileName                                           function  src/modules/transcripts/reader-core.ts:116:17      
+fileActivityMs                                             function  src/modules/transcripts/reader-core.ts:131:17      
+cleanUserContent                                           function  src/modules/transcripts/reader-core.ts:144:17      
+normalizeEntry                                             function  src/modules/transcripts/reader-core.ts:324:17      
+parseTar                                                   function  src/modules/transcripts/reader-core.ts:797:17      
+listLiveFiles                                              function  src/modules/transcripts/reader-core.ts:893:17      
+TOOL_QUALITY_STATE_VERSION                                           …/modules/transcripts/tool-quality-analyzer.ts:7:14
+TOOL_QUALITY_CLASSIFIER_VERSION                                      …/modules/transcripts/tool-quality-analyzer.ts:8:14
+withTranscriptLocksSync                  transcriptAppend  function  …es/transcripts/transcript-append-service.ts:560:17
+deleteTranscriptSync                     transcriptAppend  function  …s/transcripts/transcript-append-service.ts:1044:17
+readRunSpoolNoFollow                     transcriptAppend  function  …s/transcripts/transcript-append-service.ts:1341:17
+openNoFollowSync                                           function  …c/modules/transcripts/transcript-fs-safe.ts:122:17
+readBufferNoFollow                                         function  …c/modules/transcripts/transcript-fs-safe.ts:177:23
+buildAudioConcatFilter                                     function  src/modules/tts/audio-concat.ts:8:17               
+preparePersonaSpeechText                 messageSpeech     function  src/modules/tts/message-speech.ts:179:23           
+EVAL_VECTOR_INDEX                                                    src/modules/vector-store/eval-isolation.ts:11:14   
+isEvalGroup                                                function  src/modules/vector-store/eval-isolation.ts:13:17   
+WEB_VIEW_AGENT_JID_PREFIX                                            src/modules/web/browser-agent.ts:97:14             
+screenWebText                                              function  src/modules/web/content-safety.ts:59:23            
+detectImageType                                            function  src/modules/web/fetch-image.ts:48:17               
+rewriteImageUrl                                            function  src/modules/web/fetch-image.ts:82:17               
+IMAGE_OCR_UNCONFIGURED_NOTE                                          src/modules/web/image-ocr.ts:21:14                 
+IMAGE_OCR_FAILED_NOTE                                                src/modules/web/image-ocr.ts:23:14                 
+IMAGE_OCR_EMPTY_NOTE                                                 src/modules/web/image-ocr.ts:24:14                 
+isBlockedAddress                                           function  src/modules/web/url-guard.ts:166:17                
+ipcRelay                                                             src/modules/whatsapp/whatsapp-router.ts:68:10      
+runAgent                                                             src/modules/whatsapp/whatsapp-router.ts:68:36      
+sendMessage                                                          src/modules/whatsapp/whatsapp-router.ts:69:10      
+isAnthropicBaseUrl                                         function  src/prompt-cache.ts:74:17                          
+splitSystemPromptAtBreakpoint                              function  src/prompt-cache.ts:95:17                          
+recoveredContextSize                                       function  src/recovery.ts:365:17                             
+recoverAutomaticStageEntryRunOutcome                       function  src/recovery.ts:1388:23                            
+recoveryDeadlineMs                                         function  src/recovery.ts:3241:17                            
+isExclusiveInvitedPersonaMention                           function  src/routes/conversations.ts:436:17                 
+normalizeConversationTitle                                           src/routes/conversations.ts:764:10                 
+parseObjectivePagination                                   function  src/routes/objectives.ts:295:17                    
+resolveObjectiveRunActive                                  function  src/routes/objectives.ts:379:23                    
+withObjectiveEventGroupIds                                 function  src/routes/objectives.ts:660:17                    
+updateObjectiveHandler                                     function  src/routes/objectives.ts:1111:23                   
+observationObjectiveScope                                  function  src/routes/observations.ts:36:17                   
+RESERVED_PROJECT_FOLDERS                                             src/routes/projects.ts:774:10                      
+canAttachToParent                                          function  src/routes/projects.ts:1050:23                     
+getFullAccessStatusProjectIds                              function  src/routes/projects.ts:2109:17                     
+appPublicationTarget                                       function  src/sandbox/app-publication.ts:52:17               
+REPLICA_MARKER                                                       src/sandbox/ipc-replica.ts:48:14                   
+IPC_SYNC_HOT_MS                                                      src/sandbox/ipc-replica.ts:69:14                   
+IPC_SYNC_IDLE_MS                                                     src/sandbox/ipc-replica.ts:70:14                   
+expectedMountFingerprint                                   function  src/sandbox/mount-generation.ts:126:17             
+OUTDATED_CHECK_INTERVAL_MS                                           src/sandbox/outdated-restart.ts:27:14              
+createOutdatedRestarter                                    function  src/sandbox/outdated-restart.ts:113:17             
+sanitizeAgentModel                                         function  src/sandbox/process.ts:716:17                      
+persistCanonicalRunCompletion                              function  src/sandbox/process.ts:3209:23                     
+trailingIdleCut                                            function  src/sandbox/recording-trim.ts:27:17                
+trimTrailingIdle                                           function  src/sandbox/recording-trim.ts:68:23                
+currentObjectiveWorkDir                                    function  src/sandbox/run-admission.ts:31:23                 
+SANDBOX_RESTART_TASK_ERROR                                           src/sandbox/run-interruption.ts:90:14              
+SANDBOX_STOP_TASK_ERROR                                              src/sandbox/run-interruption.ts:93:14              
+createCursorToolTrackState                                           src/stream/parsers.ts:11:3                         
+cursorAssistantDelta                                                 src/stream/parsers.ts:12:3                         
+extractStuckShellCommand                                             src/stream/parsers.ts:13:3                         
+formatCursorToolBlock                                                src/stream/parsers.ts:14:3                         
+formatShellCommand                                                   src/stream/parsers.ts:15:3                         
+isCursorStreamEvent                                                  src/stream/parsers.ts:19:3                         
+processCursorDisplayFragments                                        src/stream/parsers.ts:20:3                         
+stuckShellDedupKey                                                   src/stream/parsers.ts:21:3                         
+tryAttachCursorStuckShellError                                       src/stream/parsers.ts:22:3                         
+TEST_PROJECT                                                         src/test-helpers.ts:10:14                          
+TaskAttributionBadges                                      function  ui/src/components/board/kanban-card.tsx:104:17     
+getLatestScoredReviewRun                                   function  …rc/components/board/task-detail-dialog.tsx:1514:17
+TaskDescriptionSection                                     function  …rc/components/board/task-detail-dialog.tsx:1622:17
+BuildLogDialog                                             function  ui/src/components/build-log-dialog.tsx:14:17       
+classifyPatchChange                                        function  ui/src/components/chat/changes-view.tsx:41:17      
+metadataFileToPatchFile                                    function  ui/src/components/chat/changes-view.tsx:82:17      
+JsonTree                                                   function  ui/src/components/chat/json-preview.tsx:216:17     
+insertTextAtTextareaSelection                              function  ui/src/components/chat/preview-pane.tsx:513:17     
+visiblePreviewTabOpenFileContext                           function  ui/src/components/chat/preview-pane.tsx:721:17     
+PreviewTabStrip                                            function  ui/src/components/chat/preview-pane.tsx:744:17     
+EditableTextPreview                                        function  ui/src/components/chat/preview-pane.tsx:2005:17    
+restrictCatalogHarnesses                                   function  ui/src/components/chat/runtime-picker.tsx:37:17    
+TRANSCRIPT_REVEAL_MAX_MS                                             …c/components/chat/transcript-reveal-gate.tsx:10:14
+favoriteKey                                                          ui/src/components/chat/use-file-favorites.ts:14:14 
+MAX_CHAT_MODES                                                       …yout/project-settings/chat-mode-validation.ts:4:14
+MAX_CHAT_MODE_LABEL_LENGTH                                           …yout/project-settings/chat-mode-validation.ts:5:14
+DEFAULT_BRANCH_ERROR                                                 …out/project-settings/repository-validation.ts:4:14
+REPOSITORY_URL_ERROR                                                 …out/project-settings/repository-validation.ts:5:14
+parseHostPorts                                             function  …/src/components/layout/sandbox-endpoints.tsx:54:17
+ProjectStatusIndicator                                     function  ui/src/components/layout/sidebar.tsx:1444:17       
+MarkdownSendContext                                                  ui/src/components/markdown-content.tsx:70:14       
+MarkdownAnswerContext                                                ui/src/components/markdown-content.tsx:75:14       
+MarkdownPlanContext                                                  ui/src/components/markdown-content.tsx:76:14       
+MarkdownPlanKanbanContext                                            ui/src/components/markdown-content.tsx:84:14       
+MarkdownArtifactOpenContext                                          ui/src/components/markdown-content.tsx:87:14       
+repeatsTitle                                               function  ui/src/components/notif/JsonForm.tsx:95:17         
+stageTypeUpdates                                           function  ui/src/components/settings/stage-editor.tsx:101:17 
+badgeVariants                                                        ui/src/components/ui/badge.tsx:49:17               
+buttonVariants                                                       ui/src/components/ui/button.tsx:65:18              
+CardHeader                                                           ui/src/components/ui/card.tsx:86:3                 
+CardFooter                                                           ui/src/components/ui/card.tsx:87:3                 
+CardAction                                                           ui/src/components/ui/card.tsx:89:3                 
+CardDescription                                                      ui/src/components/ui/card.tsx:90:3                 
+DialogOverlay                                                        ui/src/components/ui/dialog.tsx:190:3              
+DialogPortal                                                         ui/src/components/ui/dialog.tsx:191:3              
+DropdownMenuRadioGroup                                               ui/src/components/ui/dropdown-menu.tsx:251:3       
+DropdownMenuRadioItem                                                ui/src/components/ui/dropdown-menu.tsx:252:3       
+DropdownMenuShortcut                                                 ui/src/components/ui/dropdown-menu.tsx:254:3       
+ScrollBar                                                            ui/src/components/ui/scroll-area.tsx:58:22         
+CONVERSATION_SIDEBAR_MIN_WIDTH                                       …/src/hooks/use-conversation-sidebar-resize.ts:5:14
+CONVERSATION_SIDEBAR_MAX_WIDTH                                       …/src/hooks/use-conversation-sidebar-resize.ts:6:14
+cleanupLiveVoiceResources                                  function  ui/src/hooks/use-live-voice.ts:115:17              
+loadLocalHostnames                                         function  ui/src/hooks/use-network-detection.ts:32:23        
+taskListQueryFilter                                        function  ui/src/hooks/use-task-mutations.ts:39:17           
+VARIANT_SUFFIX_PATTERN                                               ui/src/lib/ab.ts:5:14                              
+listVariantSuffixes                                        function  ui/src/lib/ab.ts:49:17                             
+resolveAgentLabel                                          function  ui/src/lib/agents.ts:33:17                         
+resolveModelLabel                                          function  ui/src/lib/agents.ts:72:17                         
+isBuiltinAndroidBundle                                     function  ui/src/lib/android-ota.ts:279:17                   
+readAndroidOtaRuntimeInfo                                  function  ui/src/lib/android-ota.ts:473:23                   
+appPinStatus                                               function  ui/src/lib/app-pin.ts:65:23                        
+RUNNING_TASK_HOLD_MS                                                 ui/src/lib/attention.ts:31:14                      
+liveVoiceWebSocketBaseUrl                                            ui/src/lib/live-voice-socket.ts:10:10              
+authenticatedLiveVoiceWebSocketUrl                                   ui/src/lib/live-voice-socket.ts:11:10              
+normalizeTranscriptChunk                                   function  ui/src/lib/meeting-transcript.ts:3:17              
+isDuplicateTranscriptPart                                  function  ui/src/lib/meeting-transcript.ts:7:17              
+collapseInternalPhraseRepetition                           function  ui/src/lib/meeting-transcript.ts:31:17             
+collapseImmediateRepetition                                function  ui/src/lib/meeting-transcript.ts:79:17             
+pruneNativeSpeechCache                                     function  ui/src/lib/native-speech.ts:16:23                  
+getOpenNotification                                        function  ui/src/lib/notification-overlay.ts:23:17           
+subscribeToNotificationOverlay                             function  ui/src/lib/notification-overlay.ts:27:17           
+defaultRetry                                               function  ui/src/lib/query-client.ts:9:17                    
+formatIntervalMilliseconds                                 function  ui/src/lib/scheduled-task-format.ts:14:17          
+TASK_OUTPUT_RENDER_CHUNK_BYTES                                       ui/src/lib/task-message-rendering.ts:164:14        
+isTestingVerdictPayload                                    function  ui/src/lib/task-message-rendering.ts:355:17        
+THEME_STORAGE_KEY                                                    ui/src/lib/theme.ts:16:14                          
+getThemePreference                                         function  ui/src/lib/theme.ts:24:17                          
+resolveTheme                                               function  ui/src/lib/theme.ts:42:17                          
+applyTheme                                                 function  ui/src/lib/theme.ts:52:17                          
+setThemePreference                                         function  ui/src/lib/theme.ts:93:17                          
+queueSpeech                                                          ui/src/lib/use-tts.ts:53:3                         
+cancelSpeech                                                         ui/src/lib/use-tts.ts:54:3                         
+isBackgroundCompletionBlocked                                        ui/src/lib/use-tts.ts:55:3                         
+validateLiveStatus                                                   ui/src/lib/use-tts.ts:57:10                        
+cancelLiveSpeech                                           function  ui/src/lib/use-tts.ts:163:17                       
+MemoryReviewPage                                           function  ui/src/routes/memory-review.tsx:1474:17            
+Unused exported types (158)
+SharedCheckoutLeaseOwner                            type       src/concurrency/shared-checkout-lease.ts:14:13           
+MeetingLanguageOption                               type       src/config.ts:7:15                                       
+AndroidOtaCandidate                                 interface  src/lib/android-ota.ts:25:18                             
+PairingDetails                                      type       src/lib/device-auth/scopes.ts:31:13                      
+RoutingReason                                       type       src/lib/model-router.ts:35:13                            
+UncostedRunReason                                   type       src/lib/run-cost-report.ts:120:13                        
+UncostedRunSource                                   type       src/lib/run-cost-report.ts:128:13                        
+ServerWebBuildStatus                                type       src/lib/server-web-build-status.ts:4:13                  
+TokenKind                                           type       src/mcp/auth-tokens.ts:8:13                              
+TokenEntry                                          interface  src/mcp/auth-tokens.ts:24:18                             
+ContainerOutput                                     type       src/mcp/mcp-runner.ts:20:8                               
+AvatarGenerationStatus                              type       src/modules/ai-users/avatar-generation.ts:1:13           
+LiveQueueState                                      type       src/modules/ai-users/live-queue.ts:24:13                 
+AiUserTeam                                          interface  src/modules/ai-users/types.ts:10:18                      
+ChatDeepLink                                        interface  src/modules/chat/types.ts:11:18                          
+Conversation                                        interface  src/modules/chat/types.ts:94:18                          
+ConversationParticipant                             interface  src/modules/chat/types.ts:130:18                         
+ImageQuality                                        type       src/modules/image-generation/client.ts:12:13             
+BoardReplayRun                                      interface  src/modules/kanban/board-replay.ts:65:18                 
+StageRoutingReason                                  type       src/modules/kanban/task/auto-routing.ts:28:13            
+MergeRiskFinding                                    interface  src/modules/kanban/task/merge-risk-gate.ts:45:18         
+StageEntryEventState                                type       src/modules/kanban/types.ts:33:13                        
+TaskStatus                                          type       src/modules/kanban/types.ts:122:13                       
+TaskBoardEventType                                  type       src/modules/kanban/types.ts:316:13                       
+LiveGpuTranscriber                                  type       src/modules/live-voice/streaming.ts:32:13                
+EvidenceDivergenceClass                             type       src/modules/memory/execution-context.ts:96:13            
+HistoryPreviewProgress                              interface  src/modules/memory/history-reflection.ts:133:18          
+ToolHistoryMessage                                  interface  src/modules/memory/history-reflection.ts:673:18          
+HistoryChangeKind                                   type       src/modules/memory/history-reflector-core.ts:55:13       
+HistoryEvidence                                     interface  src/modules/memory/history-reflector-core.ts:66:18       
+HistoryCreateOp                                     interface  src/modules/memory/history-reflector-core.ts:94:18       
+HistorySupersedeOp                                  interface  src/modules/memory/history-reflector-core.ts:106:18      
+HistoryInvalidateOp                                 interface  src/modules/memory/history-reflector-core.ts:119:18      
+HistoryForgetOp                                     interface  src/modules/memory/history-reflector-core.ts:126:18      
+HistorySkippedCandidate                             interface  src/modules/memory/history-reflector-core.ts:138:18      
+HistoryReviewEvidence                               interface  src/modules/memory/history-review.ts:92:18               
+HistoryReviewTargetMemory                           interface  src/modules/memory/history-review.ts:102:18              
+HistoryReviewOperation                              interface  src/modules/memory/history-review.ts:109:18              
+HistoryReviewSkippedGroup                           interface  src/modules/memory/history-review.ts:125:18              
+JevAgreement                                        interface  src/modules/memory/jev-relevance.ts:118:18               
+MemoryAuditReflectionItem                           interface  src/modules/memory/memory-audit-types.ts:52:18           
+MemoryEvidenceFile                                  interface  src/modules/memory/memory-audit-types.ts:70:18           
+MemoryAuditActionCounts                             interface  src/modules/memory/memory-audit-types.ts:204:18          
+NearDuplicatePair                                   interface  src/modules/memory/memory-quality-score.ts:15:18         
+MemoryProjectRelationship                           type       src/modules/memory/memory-reorganize.ts:16:13            
+NativeMemoryProvider                                type       src/modules/memory/native-memory-import.ts:9:13          
+ReflectPreviewEntry                                 interface  src/modules/memory/reflect-workflow.ts:38:18             
+ReflectorGateChunkStats                             interface  src/modules/memory/reflector-gate.ts:112:18              
+ReflectorOperationRow                               type       src/modules/memory/reflector-state.ts:506:13             
+ToolPreviewStateFile                                interface  src/modules/memory/tool-reflector.ts:611:18              
+ObserverDatedChunk                                  interface  src/modules/memory/transcript-observe.ts:26:18           
+MediaAttachment                                     interface  src/modules/messaging/types.ts:8:18                      
+CostGroup                                           type       src/modules/objectives/objective-cost-report.ts:16:13    
+CostWindowKey                                       type       src/modules/objectives/objective-cost-report.ts:17:13    
+CostWindowReport                                    interface  src/modules/objectives/objective-cost-report.ts:51:18    
+CostBucket                                          interface  src/modules/objectives/objective-cost-report.ts:59:18    
+ObjectiveRuntimeTierEntry                           type       src/modules/objectives/objective-runtime-tiers.ts:29:13  
+ObjectiveStatus                                     type       src/modules/objectives/types.ts:5:13                     
+RenamedDir                        archiveMain       interface  src/modules/projects/archive-main.ts:41:18               
+SandboxTarget                                       interface  src/modules/projects/reparent-project.ts:416:18          
+ScannedRepository                                   interface  src/modules/projects/repository-discovery.ts:60:18       
+RepositoryDiscoveryEntry                            interface  src/modules/projects/repository-discovery.ts:65:18       
+ProposalStatus                                      type       src/modules/proposals/actions.ts:78:13                   
+PromotionRepo                                       type       src/modules/proposals/promotion-targets.ts:28:13         
+ProposalInput                                       type       src/modules/proposals/service.ts:107:13                  
+MergePresentation                                   interface  src/modules/proposals/service.ts:333:18                  
+FileChange                                          type       src/modules/proposals/targets.ts:354:13                  
+ImportedTurn                                        type       src/modules/transcripts/codex-session-import.ts:73:8     
+CodexImportV1Run                                    type       src/modules/transcripts/codex-session-import.ts:74:29    
+NativeImportStatus                                  type       src/modules/transcripts/native-import-update.ts:39:13    
+NativeImportUpdateChanges                           interface  src/modules/transcripts/native-import-update.ts:107:18   
+NativeSource                                        type       src/modules/transcripts/native-session-import.ts:14:13   
+MessageKind                                         type       src/modules/transcripts/reader-core.ts:22:13             
+SessionTranscriptDirectoryResult                    interface  …ules/transcripts/session-transcript-maintenance.ts:34:18
+ToolOutcome                                         type       src/modules/transcripts/tool-quality-analyzer.ts:10:13   
+AnalyzerState                                       interface  src/modules/transcripts/tool-quality-analyzer.ts:69:18   
+TranscriptFaultPoint              transcriptAppend  type       …c/modules/transcripts/transcript-append-service.ts:73:13
+WebScreening                                        type       src/modules/web/content-safety.ts:28:13                  
+GroundedSource                                      interface  src/modules/web/grounded-search.ts:18:18                 
+GroundedSearchFailure                               interface  src/modules/web/grounded-search.ts:31:18                 
+ImageOcrClient                                      interface  src/modules/web/image-ocr.ts:26:18                       
+MediaAttachment                                     type       src/modules/whatsapp/messaging-client.ts:20:3            
+TranscribeOptions                                   type       src/modules/whisper/index.ts:13:13                       
+OutdatedSandbox                                     interface  src/sandbox/outdated-restart.ts:31:18                    
+OutdatedRestartDeps                                 interface  src/sandbox/outdated-restart.ts:38:18                    
+DependencyByCommit                                  type       src/sandbox/process.ts:384:13                            
+TrailingIdleCut                                     interface  src/sandbox/recording-trim.ts:16:18                      
+LaunchTicket                                        interface  src/sandbox/run-admission.ts:13:18                       
+JevMockResponse                                     interface  src/test-utils/jev-mock-server.ts:18:18                  
+Task                                                type       src/types.ts:12:15                                       
+TaskSummary                                         type       src/types.ts:12:21                                       
+TaskRunStageDuration                                interface  src/types.ts:43:18                                       
+ProjectMode                                         type       src/types.ts:52:13                                       
+AccountPreferences                                  interface  src/types.ts:102:18                                      
+StarterPrompt                                       interface  src/types.ts:227:18                                      
+OpenFilePosition                                    interface  src/types.ts:232:18                                      
+DuressInstructionsResponse                          interface  src/types.ts:329:18                                      
+ConversationPublicShare                             interface  src/types.ts:334:18                                      
+PublicAttachment                                    interface  src/types.ts:358:18                                      
+PublicConversationMessage                           interface  src/types.ts:366:18                                      
+MessageSpeechDescriptor                             interface  src/types.ts:380:18                                      
+PublicConversation                                  interface  src/types.ts:387:18                                      
+EditableFileSource                                  type       src/types.ts:417:13                                      
+EditableFileResponse                                interface  src/types.ts:419:18                                      
+EditableFileSaveResponse                            interface  src/types.ts:429:18                                      
+ProviderAccountsView                                interface  src/types.ts:525:18                                      
+MailCapabilities                                    interface  src/types.ts:564:18                                      
+MailDraft                                           interface  src/types.ts:605:18                                      
+ChangeType                                          type       ui/src/components/chat/changes-view.tsx:30:13            
+FileExplorerSort                                    interface  ui/src/components/chat/file-explorer.tsx:43:18           
+ExpandSignal                                        type       ui/src/components/chat/json-preview.tsx:28:13            
+SetProjectSettingsForm                              type       ui/src/components/layout/project-settings/shared.tsx:5:13
+ShareTarget                                         type       ui/src/components/share-dialog.tsx:49:13                 
+LiveVoiceStatus                                     type       ui/src/hooks/use-live-voice.ts:28:13                     
+ChatAgentDisplayEntry                               interface  ui/src/lib/agents.ts:15:18                               
+AndroidOtaUnavailableReason                         type       ui/src/lib/android-ota.ts:20:13                          
+AndroidOtaRuntimeInfo                               interface  ui/src/lib/android-ota.ts:466:18                         
+AppPinStatus                                        type       ui/src/lib/app-pin.ts:26:35                              
+AuthRole                                            type       ui/src/lib/auth.ts:75:13                                 
+DeviceTtsState                                      type       ui/src/lib/device-tts.ts:4:13                            
+DeviceTtsEngine                                     interface  ui/src/lib/device-tts.ts:11:18                           
+DeviceTtsVoice                                      interface  ui/src/lib/device-tts.ts:20:18                           
+LivePersonaRevealPhase                              type       ui/src/lib/live-persona-reveal.ts:3:13                   
+SpeechPriority                                      type       ui/src/lib/live-speech-queue.ts:1:13                     
+LocalTranscriptionState                             type       ui/src/lib/local-transcription.ts:5:13                   
+LocalModelDescriptor                                interface  ui/src/lib/local-transcription.ts:16:18                  
+QueryLoadPhase                                      type       ui/src/lib/use-query-load-state.ts:4:13                  
+PreviewTabsState                                    interface  ui/src/store.ts:182:18                                   
+ProjectModeStatus                                   type       ui/src/types.ts:39:13                                    
+TriggerSource                                       type       ui/src/types.ts:108:13                                   
+AttributionUser                                     interface  ui/src/types.ts:109:18                                   
+TriggerMetadata                                     interface  ui/src/types.ts:115:18                                   
+TaskBoardEventType                                  type       ui/src/types.ts:258:13                                   
+ReplayTaskSnapshot                                  type       ui/src/types.ts:259:13                                   
+TaskBoardEvent                                      interface  ui/src/types.ts:261:18                                   
+BoardReplayReviewMilestone                          interface  ui/src/types.ts:291:18                                   
+MessageSpeechDescriptor                             interface  ui/src/types.ts:370:18                                   
+PublicConversation                                  interface  ui/src/types.ts:377:18                                   
+TranscriptUserMessage                               interface  ui/src/types.ts:394:18                                   
+TranscriptAssistantMessage                          interface  ui/src/types.ts:413:18                                   
+TranscriptResult                                    interface  ui/src/types.ts:430:18                                   
+TranscriptSystem                                    interface  ui/src/types.ts:440:18                                   
+TranscriptFallbackMessage                           interface  ui/src/types.ts:447:18                                   
+TranscriptMilestone                                 interface  ui/src/types.ts:465:18                                   
+ApplicationWsEvent                                  type       ui/src/types.ts:485:13                                   
+Artifact                                            interface  ui/src/types.ts:495:18                                   
+LinkedRepositoryDiff                                interface  ui/src/types.ts:524:18                                   
+ObjectiveRunStats                                   interface  ui/src/types.ts:729:18                                   
+CustomValueDefinition                               interface  ui/src/types.ts:737:18                                   
+StarterPrompt                                       interface  ui/src/types.ts:743:18                                   
+OpenFilePosition                                    interface  ui/src/types.ts:748:18                                   
+RepositoryDiscoveryEntry                            interface  ui/src/types.ts:874:18                                   
+EffectiveSandboxSettings                            interface  ui/src/types.ts:892:18                                   
+WhatsAppConnectionStatus                            type       ui/src/types.ts:918:13                                   
+ScheduledTaskTranscriptEntry                        interface  ui/src/types.ts:1051:18                                  
+WsEventType                                         type       ui/src/types.ts:1082:13                                  
+MailCapabilities                                    interface  ui/src/types.ts:1214:18                                  
+MailMessage                                         interface  ui/src/types.ts:1231:18                                  
+Duplicate exports (5)
+ensureAvatarThumbnail|ensureAiUserAvatarThumbnail               src/modules/ai-users/avatar-thumbnail.ts
+claimTaskExecution|_testOnlyTryClaimTaskExecution               src/modules/kanban/task/pipeline.ts     
+releaseTaskExecutionClaim|_testOnlyReleaseTaskExecutionClaim    src/modules/kanban/task/pipeline.ts     
+knowledgeModule|default                                         src/modules/knowledge/index.ts          
+setProjectTaskCheckoutModeTool|setProjectWorktreeIsolationTool  src/modules/project-setup/tools.ts      
+Configuration hints (19)
+drizzle/**            Remove from knip.json → (root) → ignore (no matches)                          
+data/**               Remove from knip.json → (root) → ignore (no matches)                          
+logs/**               Remove from knip.json → (root) → ignore (no matches)                          
+store/**              Remove from knip.json → (root) → ignore (no matches)                          
+ipc/**                Remove from knip.json → (root) → ignore (no matches)                          
+groups/**             Remove from knip.json → (root) → ignore (no matches)                          
+.worktrees/**         Remove from knip.json → (root) → ignore (gitignored)                          
+src/routeTree.gen.ts  Remove from knip.json → ui → ignore (no issues)                               
+android/**            Remove from knip.json → ui → ignore (no matches)                              
+dist/**               Remove from knip.json → ui → ignore (gitignored)                              
+src/index.ts!         Remove redundant pattern from knip.json → (root) → entry                      
+drizzle.config.ts     Remove redundant pattern from knip.json → (root) → entry                      
+src/test-preload.ts   Remove redundant pattern from knip.json → (root) → entry                      
+src/main.tsx!         Remove redundant pattern from knip.json → ui → entry                          
+vite.config.ts        Remove redundant pattern from knip.json → ui → entry                          
+vitest.config.ts      Remove redundant pattern from knip.json → ui → entry                          
+capacitor.config.ts   Remove redundant pattern from knip.json → ui → entry                          
+src/test/setup.ts     Remove redundant pattern from knip.json → ui → entry                          
+.css                  Compiled extension excluded by knip.json → ui → project (imports not followed)

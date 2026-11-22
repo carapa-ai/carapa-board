@@ -1,0 +1,363 @@
+{
+  "views": [
+    {
+      "name": "bell-list",
+      "route": "/board/ui-running",
+      "ready": "button[aria-label^=\"Notifications\"]",
+      "steps": [
+        {
+          "click": "button[aria-label^=\"Notifications\"]"
+        },
+        {
+          "waitFor": "[role=menu]"
+        }
+      ],
+      "focusWalk": "arrows"
+    },
+    {
+      "name": "bell-empty",
+      "route": "/board/ui-running",
+      "ready": "button[aria-label^=\"Notifications\"]",
+      "mocks": [
+        {
+          "url": "/api/notifications/unread",
+          "status": 200,
+          "json": {
+            "items": [],
+            "count": 0
+          }
+        }
+      ],
+      "steps": [
+        {
+          "click": "button[aria-label^=\"Notifications\"]"
+        },
+        {
+          "waitFor": "[role=menu]"
+        }
+      ],
+      "focusWalk": "arrows"
+    },
+    {
+      "name": "notif-markdown",
+      "route": "/board/ui-running",
+      "ready": "button[aria-label^=\"Notifications\"]",
+      "steps": [
+        {
+          "click": "button[aria-label^=\"Notifications\"]"
+        },
+        {
+          "waitFor": "[role=menu]"
+        },
+        {
+          "click": "[role=menuitem]:has-text(\"Nightly dependency audit\")"
+        },
+        {
+          "waitFor": "[data-ui=notification-dialog]"
+        }
+      ],
+      "scope": "[data-ui=notification-dialog]"
+    },
+    {
+      "name": "notif-short",
+      "route": "/board/ui-running",
+      "ready": "button[aria-label^=\"Notifications\"]",
+      "steps": [
+        {
+          "click": "button[aria-label^=\"Notifications\"]"
+        },
+        {
+          "waitFor": "[role=menu]"
+        },
+        {
+          "click": "[role=menuitem]:has-text(\"Nightly backup finished\")"
+        },
+        {
+          "waitFor": "[data-ui=notification-dialog]"
+        }
+      ],
+      "scope": "[data-ui=notification-dialog]"
+    },
+    {
+      "name": "notif-not-found",
+      "route": "/board/ui-running",
+      "ready": "button[aria-label^=\"Notifications\"]",
+      "mocks": [
+        {
+          "url": "/api/notifications/payloads/",
+          "method": "GET",
+          "status": 404,
+          "json": {
+            "error": "Not found"
+          }
+        }
+      ],
+      "steps": [
+        {
+          "click": "button[aria-label^=\"Notifications\"]"
+        },
+        {
+          "waitFor": "[role=menu]"
+        },
+        {
+          "click": "[role=menuitem]:has-text(\"Nightly backup finished\")"
+        },
+        {
+          "waitFor": "[data-ui=notification-dialog]"
+        }
+      ],
+      "scope": "[data-ui=notification-dialog]"
+    },
+    {
+      "name": "form-select",
+      "route": "/board/ui-running",
+      "ready": "button[aria-label^=\"Notifications\"]",
+      "steps": [
+        {
+          "click": "button[aria-label^=\"Notifications\"]"
+        },
+        {
+          "waitFor": "[role=menu]"
+        },
+        {
+          "click": "[role=menuitem]:has-text(\"Which environment should I deploy to?\")"
+        },
+        {
+          "waitFor": "[data-ui=notification-dialog]"
+        }
+      ],
+      "scope": "[data-ui=notification-dialog]",
+      "keyboardOpen": {
+        "focus": "[data-ui=notification-dialog] input, [data-ui=notification-dialog] textarea, [data-ui=notification-dialog] select",
+        "probe": {
+          "submit": "[data-ui=notification-dialog] button[type=submit]"
+        }
+      }
+    },
+    {
+      "name": "form-multiline",
+      "route": "/board/ui-running",
+      "ready": "button[aria-label^=\"Notifications\"]",
+      "steps": [
+        {
+          "click": "button[aria-label^=\"Notifications\"]"
+        },
+        {
+          "waitFor": "[role=menu]"
+        },
+        {
+          "click": "[role=menuitem]:has-text(\"Draft the release announcement\")"
+        },
+        {
+          "waitFor": "[data-ui=notification-dialog]"
+        }
+      ],
+      "scope": "[data-ui=notification-dialog]",
+      "keyboardOpen": {
+        "focus": "#notif-field-message",
+        "probe": {
+          "message": "#notif-field-message",
+          "submit": "[data-ui=notification-dialog] button[type=submit]"
+        }
+      }
+    },
+    {
+      "name": "form-long",
+      "route": "/board/ui-running",
+      "ready": "button[aria-label^=\"Notifications\"]",
+      "steps": [
+        {
+          "click": "button[aria-label^=\"Notifications\"]"
+        },
+        {
+          "waitFor": "[role=menu]"
+        },
+        {
+          "click": "[role=menuitem]:has-text(\"Quarterly project intake\")"
+        },
+        {
+          "waitFor": "[data-ui=notification-dialog]"
+        }
+      ],
+      "scope": "[data-ui=notification-dialog]",
+      "keyboardOpen": {
+        "focus": "#notif-field-notes",
+        "probe": {
+          "notes": "#notif-field-notes",
+          "submit": "[data-ui=notification-dialog] button[type=submit]"
+        }
+      }
+    },
+    {
+      "name": "form-long-labels",
+      "route": "/board/ui-running",
+      "ready": "button[aria-label^=\"Notifications\"]",
+      "steps": [
+        {
+          "click": "button[aria-label^=\"Notifications\"]"
+        },
+        {
+          "waitFor": "[role=menu]"
+        },
+        {
+          "click": "[role=menuitem]:has-text(\"Weekly review of the staging environment\")"
+        },
+        {
+          "waitFor": "[data-ui=notification-dialog]"
+        }
+      ],
+      "scope": "[data-ui=notification-dialog]"
+    },
+    {
+      "name": "form-required-empty",
+      "route": "/board/ui-running",
+      "ready": "button[aria-label^=\"Notifications\"]",
+      "steps": [
+        {
+          "click": "button[aria-label^=\"Notifications\"]"
+        },
+        {
+          "waitFor": "[role=menu]"
+        },
+        {
+          "click": "[role=menuitem]:has-text(\"Which environment should I deploy to?\")"
+        },
+        {
+          "waitFor": "[data-ui=notification-dialog]"
+        },
+        {
+          "click": "[data-ui=notification-dialog] button[type=submit]"
+        },
+        {
+          "wait": 500
+        }
+      ],
+      "scope": "[data-ui=notification-dialog]"
+    },
+    {
+      "name": "form-server-error",
+      "route": "/board/ui-running",
+      "ready": "button[aria-label^=\"Notifications\"]",
+      "steps": [
+        {
+          "click": "button[aria-label^=\"Notifications\"]"
+        },
+        {
+          "waitFor": "[role=menu]"
+        },
+        {
+          "click": "[role=menuitem]:has-text(\"Capacity plan: how many runners?\")"
+        },
+        {
+          "waitFor": "[data-ui=notification-dialog]"
+        },
+        {
+          "fill": ["#notif-field-runners", "12"]
+        },
+        {
+          "click": "[data-ui=notification-dialog] button[type=submit]"
+        },
+        {
+          "wait": 900
+        }
+      ],
+      "scope": "[data-ui=notification-dialog]"
+    },
+    {
+      "name": "form-submit-error",
+      "route": "/board/ui-running",
+      "ready": "button[aria-label^=\"Notifications\"]",
+      "mocks": [
+        {
+          "url": "/ack",
+          "method": "POST",
+          "status": 500,
+          "json": {
+            "error": "Submit failed"
+          }
+        }
+      ],
+      "steps": [
+        {
+          "click": "button[aria-label^=\"Notifications\"]"
+        },
+        {
+          "waitFor": "[role=menu]"
+        },
+        {
+          "click": "[role=menuitem]:has-text(\"Which environment should I deploy to?\")"
+        },
+        {
+          "waitFor": "[data-ui=notification-dialog]"
+        },
+        {
+          "select": ["#notif-field-environment", "staging"]
+        },
+        {
+          "click": "[data-ui=notification-dialog] button[type=submit]"
+        },
+        {
+          "wait": 900
+        }
+      ],
+      "scope": "[data-ui=notification-dialog]"
+    },
+    {
+      "name": "form-submit-pending",
+      "route": "/board/ui-running",
+      "ready": "button[aria-label^=\"Notifications\"]",
+      "mocks": [
+        {
+          "url": "/ack",
+          "method": "POST",
+          "delayMs": 2500,
+          "status": 500,
+          "json": {
+            "error": "Submit failed"
+          }
+        }
+      ],
+      "steps": [
+        {
+          "click": "button[aria-label^=\"Notifications\"]"
+        },
+        {
+          "waitFor": "[role=menu]"
+        },
+        {
+          "click": "[role=menuitem]:has-text(\"Which environment should I deploy to?\")"
+        },
+        {
+          "waitFor": "[data-ui=notification-dialog]"
+        },
+        {
+          "select": ["#notif-field-environment", "staging"]
+        },
+        {
+          "click": "[data-ui=notification-dialog] button[type=submit]"
+        },
+        {
+          "wait": 500
+        }
+      ],
+      "scope": "[data-ui=notification-dialog]",
+      "focusWalk": false,
+      "escape": false
+    },
+    {
+      "name": "now-form",
+      "route": "/board/ui-running",
+      "ready": "button[aria-label^=\"Notifications\"]",
+      "steps": [
+        {
+          "click": "[data-ui=sidebar-now-item-notification]"
+        },
+        {
+          "waitFor": "[data-ui=notification-dialog]"
+        }
+      ],
+      "scope": "[data-ui=notification-dialog]",
+      "viewports": ["1440x900", "1366x768"]
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "views": [
+    {
+      "name": "task-details",
+      "route": "/board/ui-running?taskId=ui-task-detail-eval",
+      "ready": "[data-ui=task-detail-header]",
+      "scope": "[role=dialog]:has([data-ui=task-detail-header])",
+      "steps": [
+        {
+          "click": "[data-ui=task-detail-tab][data-tab=details]"
+        }
+      ],
+      "densityScope": "[data-ui=task-detail-details-panel]"
+    },
+    {
+      "name": "task-chat",
+      "route": "/board/ui-running?taskId=ui-task-detail-eval",
+      "ready": "[data-ui=task-detail-header]",
+      "scope": "[role=dialog]:has([data-ui=task-detail-header])",
+      "steps": [
+        {
+          "click": "[data-ui=task-detail-tab][data-tab=chat]"
+        }
+      ],
+      "densityScope": "[data-ui=task-tab-content]"
+    },
+    {
+      "name": "task-history",
+      "route": "/board/ui-running?taskId=ui-task-detail-eval",
+      "ready": "[data-ui=task-detail-header]",
+      "scope": "[role=dialog]:has([data-ui=task-detail-header])",
+      "steps": [
+        {
+          "click": "[data-ui=task-detail-tab][data-tab=history]"
+        }
+      ],
+      "densityScope": "[data-ui=task-tab-content]",
+      "viewports": ["1440x900", "390x844"]
+    },
+    {
+      "name": "task-changes",
+      "route": "/board/ui-running?taskId=ui-task-detail-eval",
+      "ready": "[data-ui=task-detail-header]",
+      "scope": "[role=dialog]:has([data-ui=task-detail-header])",
+      "steps": [
+        {
+          "click": "[data-ui=task-detail-tab][data-tab=changes]"
+        },
+        {
+          "clickAll": "[data-ui=task-tab-content] button[aria-expanded=false]"
+        }
+      ],
+      "densityScope": "[data-ui=task-tab-content]",
+      "viewports": ["1440x900", "390x844"]
+    },
+    {
+      "name": "task-recordings",
+      "route": "/board/ui-running?taskId=ui-task-detail-eval",
+      "ready": "[data-ui=task-detail-header]",
+      "scope": "[role=dialog]:has([data-ui=task-detail-header])",
+      "steps": [
+        {
+          "click": "[data-ui=task-detail-tab][data-tab=recordings]"
+        }
+      ],
+      "densityScope": "[data-ui=task-tab-content]",
+      "viewports": ["1440x900", "390x844"]
+    }
+  ]
+}

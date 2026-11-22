@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/png" href="/src/assets/carapa-bot.png" />
+  <title>CarapaBoard</title>
+  <script>
+    /* Resolve and apply the saved appearance before the bundle loads, so the
+       first paint already has the right theme (no flash of the wrong one).
+       Keep in sync with ui/src/lib/theme.ts. */
+    (function () {
+      var preference = 'system';
+      try {
+        var saved = localStorage.getItem('carapa-theme');
+        if (saved === 'light' || saved === 'dark' || saved === 'system') {
+          preference = saved;
+        }
+      } catch (e) {
+        /* storage unavailable: fall back to system */
+      }
+      var dark =
+        preference === 'dark' ||
+        (preference === 'system' &&
+          typeof matchMedia === 'function' &&
+          matchMedia('(prefers-color-scheme: dark)').matches);
+      var root = document.documentElement;
+      root.classList.toggle('dark', dark);
+      root.classList.toggle('light', !dark);
+      root.style.colorScheme = dark ? 'dark' : 'light';
+      root.style.setProperty('--pre-paint-background', dark ? '#09090b' : '#f9fafc');
+    })();
+  </script>
+  <style>
+    /* Force a new-document paint before the application bundle loads. The
+       background follows the theme applied by the script above. */
+    html, body, #root { min-height: 100%; margin: 0; background: var(--pre-paint-background, #09090b); }
+  </style>
+</head>
+
+<body class="antialiased">
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
+</html>

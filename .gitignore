@@ -1,0 +1,61 @@
+# Dependencies (no trailing slash — must also match symlinks created by .agent/worktree-setup.sh)
+node_modules
+
+# Build output
+dist/
+dist-new/
+dist-old/
+ui/ota/
+
+# Local data & auth (preserved via .gitkeep)
+store/*
+!store/.gitkeep
+data/*
+!data/.gitkeep
+logs/*
+!logs/.gitkeep
+ipc/*
+!ipc/.gitkeep
+groups/*
+!groups/.gitkeep
+
+# Secrets
+*.keys.json
+.env
+.env.*
+!.env.example
+!.env.test
+docker-compose.override.local.yml
+
+# OS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+
+agents-sdk-docs
+
+.worktrees
+.gitnexus
+.playwright-cli/
+/session-*.webm
+
+# Workspace tooling and local notes (not part of public package)
+scratch/
+AGENTS.override.md
+
+# Certs
+server_cert.crt
+
+# Local Claude Code permissions (.claude points to .agent)
+/.agent/settings.json
+/.agent/settings.local.json
+# Claude Code CronCreate state (.claude -> .agent, so **/.claude/ patterns miss it)
+/.agent/scheduled_tasks.lock
+/.agent/scheduled_tasks.json
+
+# Local task state and generated Python bytecode
+/.agent/objectives/
+__pycache__/
+*.py[cod]

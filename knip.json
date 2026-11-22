@@ -1,0 +1,91 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": [
+        "src/index.ts!",
+        // Imported through a variable (`const modulePath = ...; import(modulePath)`) in src/index.ts.
+        "src/modules/whatsapp/index.ts!",
+        // Started by docker-compose.yml (`bun /app/browser-service/server.ts`), no importer.
+        "src/modules/web/sidecar/server.ts!",
+        // Bundled by scripts/build-transcripts-skill.ts.
+        "src/modules/transcripts/transcripts-main.ts",
+        "scripts/**/*.{ts,js}",
+        "drizzle.config.ts",
+        "ecosystem.config.cjs",
+        // bunfig.toml [test] preload.
+        "src/test-preload.ts",
+        "**/*.test.{ts,tsx}",
+        "src/routes/*.integration.ts",
+        // Spawned by path from tests.
+        "**/__fixtures__/**"
+      ],
+      "project": ["src/**/*.ts!", "scripts/**/*.{ts,js}", "*.{ts,cjs}"],
+      "ignore": [
+        "drizzle/**",
+        "data/**",
+        "logs/**",
+        "store/**",
+        "ipc/**",
+        "groups/**",
+        ".worktrees/**"
+      ]
+    },
+    "ui": {
+      "entry": [
+        "index.html",
+        "src/main.tsx!",
+        "vite.config.ts",
+        "vitest.config.ts",
+        "capacitor.config.ts",
+        "src/**/*.{test,vitest}.{ts,tsx}",
+        // Loaded by string import() from the *.browser.test.ts suites.
+        "src/**/*-browser-harness.tsx",
+        "src/test/setup.ts",
+        "scripts/*.{ts,mjs}"
+      ],
+      "project": ["src/**/*.{ts,tsx}!", "scripts/*.{ts,mjs}", "*.ts"],
+      // tailwindcss is only referenced by `@import 'tailwindcss'` in src/global.css, which knip does not follow.
+      "ignoreDependencies": ["tailwindcss"],
+      "ignore": ["src/routeTree.gen.ts", "android/**", "dist/**"]
+    }
+  },
+  "ignoreIssues": {
+    // Both names are imported by files outside src/modules/ (src/routes/ai-users.ts and
+    // public-conversations.ts use ensureAiUserAvatarThumbnail, src/routes/preferences.ts uses
+    // ensureAvatarThumbnail), which this cleanup must not edit.
+    "src/modules/ai-users/avatar-thumbnail.ts": ["duplicates"],
+    // The _testOnly* aliases mark the claim/release test seam and are imported by
+    // src/routes-tasks.test.ts (outside src/modules/) and task-pipeline.test.ts.
+    "src/modules/kanban/task/pipeline.ts": ["duplicates"],
+    // setContainerAgentRunnerForTests and setChatReflectionSchedulerForTests are used by
+    // agent-runner.test.ts and two route tests through `runner = await import(...)`, which knip does not follow.
+    "src/agent-runner.ts": ["exports"],
+    // MemoryReviewPage is read by name from the lazy `import('@/routes/memory-review')` in
+    // admin-overlay-host.tsx (`.then((m) => ({ default: m.MemoryReviewPage }))`), which knip does not follow.
+    "ui/src/routes/memory-review.tsx": ["exports"],
+    // insertTextAtTextareaSelection is called by file-explorer.browser.test.ts from the page context
+    // (`await import('/src/components/chat/preview-pane.tsx')`), which knip does not follow.
+    "ui/src/components/chat/preview-pane.tsx": ["exports"],
+    // reapStalePromotionLock is reached by name from a flock-protected bun subprocess:
+    // promotion-apply.ts spawns `import { reapStalePromotionLock } from <this file's URL>`.
+    "src/modules/proposals/promotion-apply.ts": ["exports"],
+    // sweepPendingTranscriptReflections is called by tool-reflector.test.ts from `bun -e` subprocess
+    // scripts that import this file by path; knip does not read those eval strings.
+    "src/modules/memory/tool-reflector.ts": ["exports"],
+    // Voice / Live Mode / TTS / STT code is out of scope for the dead-export cleanup.
+    "src/modules/ai-users/live-queue.ts": ["exports", "types"],
+    // Voice / Live Mode / TTS / STT code is out of scope for the dead-export cleanup.
+    "src/modules/chat/live-activity.ts": ["exports", "types"],
+    // Voice / Live Mode / TTS / STT code is out of scope for the dead-export cleanup.
+    "src/modules/live-voice/streaming.ts": ["exports", "types"],
+    // Voice / Live Mode / TTS / STT code is out of scope for the dead-export cleanup.
+    "src/modules/tts/audio-concat.ts": ["exports", "types"],
+    // Voice / Live Mode / TTS / STT code is out of scope for the dead-export cleanup.
+    "src/modules/tts/message-speech.ts": ["exports", "types"],
+    // Voice / Live Mode / TTS / STT code is out of scope for the dead-export cleanup.
+    "src/modules/whisper/index.ts": ["exports", "types"]
+  },
+  // System binaries installed in the image (not npm packages); flock is only named in a comment.
+  "ignoreBinaries": ["pm2", "flock", "sha256sum", "ffmpeg"]
+}

@@ -1,0 +1,93 @@
+--- a/src/whisper.cpp
++++ b/src/whisper.cpp
+@@ -6989,8 +6989,34 @@
+         }
+     }
+ 
++    // CARAPA: apply audio_ctx before language detection so detection encodes
++    // the same window as transcription (instead of a full 30 s window).
++    if (params.audio_ctx > whisper_n_audio_ctx(ctx)) {
++        WHISPER_LOG_ERROR("%s: audio_ctx is larger than the maximum allowed (%d > %d)\n", __func__, params.audio_ctx, whisper_n_audio_ctx(ctx));
++        return -5;
++    }
++    state->exp_n_audio_ctx = params.audio_ctx;
++
++    // CARAPA: a comma-separated language list ("ro,en") restricts detection
++    // to those languages.
++    std::vector<int> lang_candidates;
++    if (params.language != nullptr && strchr(params.language, ',') != nullptr) {
++        const std::string list(params.language);
++        size_t start = 0;
++        while (start <= list.size()) {
++            size_t end = list.find(',', start);
++            if (end == std::string::npos) end = list.size();
++            const int id = whisper_lang_id(list.substr(start, end - start).c_str());
++            if (id >= 0) lang_candidates.push_back(id);
++            start = end + 1;
++        }
++    }
++
++    // CARAPA: the detection pass encodes seek 0; the first window reuses it.
++    bool encoded_for_detection = false;
++
+     // auto-detect language if not specified
+-    if (params.language == nullptr || strlen(params.language) == 0 || strcmp(params.language, "auto") == 0 || params.detect_language) {
++    if (params.language == nullptr || strlen(params.language) == 0 || strcmp(params.language, "auto") == 0 || params.detect_language || !lang_candidates.empty()) {
+         std::vector<float> probs(whisper_lang_max_id() + 1, 0.0f);
+ 
+         if (params.encoder_begin_callback) {
+@@ -7000,11 +7026,28 @@
+             }
+         }
+ 
+-        const auto lang_id = whisper_lang_auto_detect_internal(ctx, state, 0, params.n_threads, probs.data(), params.abort_callback, params.abort_callback_user_data);
++        auto lang_id = whisper_lang_auto_detect_internal(ctx, state, 0, params.n_threads, probs.data(), params.abort_callback, params.abort_callback_user_data);
+         if (lang_id < 0) {
+             WHISPER_LOG_ERROR("%s: failed to auto-detect language\n", __func__);
+             return -3;
+         }
++        if (!lang_candidates.empty()) {
++            // The first listed language is preferred: Whisper's detection is
++            // unreliable on short phrases, so switch only when another
++            // candidate is clearly more likely.
++            const float preference = 3.0f;
++            const int preferred = lang_candidates[0];
++            lang_id = preferred;
++            float best = probs[preferred] * preference;
++            for (const int id : lang_candidates) {
++                if (id != preferred && probs[id] > best) {
++                    lang_id = id;
++                    best = probs[id];
++                }
++                WHISPER_LOG_INFO("%s: candidate %s p = %f\n", __func__, whisper_lang_str(id), probs[id]);
++            }
++        }
++        encoded_for_detection = params.offset_ms / 10 == 0;
+         state->lang_id = lang_id;
+         params.language = whisper_lang_str(lang_id);
+ 
+@@ -7138,12 +7181,7 @@
+         }
+     }
+ 
+-    // overwrite audio_ctx, max allowed is hparams.n_audio_ctx
+-    if (params.audio_ctx > whisper_n_audio_ctx(ctx)) {
+-        WHISPER_LOG_ERROR("%s: audio_ctx is larger than the maximum allowed (%d > %d)\n", __func__, params.audio_ctx, whisper_n_audio_ctx(ctx));
+-        return -5;
+-    }
+-    state->exp_n_audio_ctx = params.audio_ctx;
++    // CARAPA: audio_ctx is applied before language detection (above).
+ 
+     // these tokens determine the task that will be performed
+     std::vector<whisper_token> prompt_init = { whisper_token_sot(ctx), };
+@@ -7212,7 +7250,9 @@
+         }
+ 
+         // encode audio features starting at offset seek
+-        if (!whisper_encode_internal(*ctx, *state, seek, params.n_threads, params.abort_callback, params.abort_callback_user_data)) {
++        if (encoded_for_detection && seek == seek_start) {
++            encoded_for_detection = false; // CARAPA: reuse the detection pass
++        } else if (!whisper_encode_internal(*ctx, *state, seek, params.n_threads, params.abort_callback, params.abort_callback_user_data)) {
+             WHISPER_LOG_ERROR("%s: failed to encode\n", __func__);
+             return -6;
+         }

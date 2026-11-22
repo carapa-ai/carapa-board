@@ -1,0 +1,214 @@
+{
+  "files": {
+    "components/account/connected-clients-card.tsx": {
+      "max": 1
+    },
+    "components/account/devices-tab.tsx": {
+      "max": 6
+    },
+    "components/account/this-device-card.tsx": {
+      "max": 1
+    },
+    "components/attachment-chips.tsx": {
+      "max": 2
+    },
+    "components/board/ab-card-badges.tsx": {
+      "max": 3
+    },
+    "components/board/ab-comparison-panel.tsx": {
+      "max": 3
+    },
+    "components/board/add-task-dialog.tsx": {
+      "max": 3
+    },
+    "components/board/co-stage-select.tsx": {
+      "max": 1
+    },
+    "components/board/cronjob-card.tsx": {
+      "max": 6
+    },
+    "components/board/dataset-task-card.tsx": {
+      "max": 5
+    },
+    "components/board/kanban-board.tsx": {
+      "max": 3
+    },
+    "components/board/kanban-card.tsx": {
+      "max": 24
+    },
+    "components/board/kanban-column.tsx": {
+      "max": 3
+    },
+    "components/board/objective-marker.tsx": {
+      "max": 1
+    },
+    "components/board/scheduled-task-card.tsx": {
+      "max": 7
+    },
+    "components/board/task-ai-description-panel.tsx": {
+      "max": 6
+    },
+    "components/board/task-detail-dialog.tsx": {
+      "max": 41
+    },
+    "components/board/task-review-testing-summary.tsx": {
+      "max": 1
+    },
+    "components/board/task-run-history-entry.tsx": {
+      "max": 5
+    },
+    "components/board/task-stage-duration-summary.tsx": {
+      "max": 1
+    },
+    "components/chat/ai-users-menu.tsx": {
+      "max": 2
+    },
+    "components/chat/bash-tab.tsx": {
+      "max": 2
+    },
+    "components/chat/browser-tab.tsx": {
+      "max": 3
+    },
+    "components/chat/changes-tab.tsx": {
+      "max": 2
+    },
+    "components/chat/changes-view.tsx": {
+      "max": 2
+    },
+    "components/chat/chat-fork-divider.tsx": {
+      "max": 1
+    },
+    "components/chat/chat-message-bubble.tsx": {
+      "max": 8
+    },
+    "components/chat/chat-page.tsx": {
+      "max": 39
+    },
+    "components/chat/conversation-explorer.tsx": {
+      "max": 1
+    },
+    "components/chat/default-branch-sync.tsx": {
+      "max": 1
+    },
+    "components/chat/file-explorer.tsx": {
+      "max": 3
+    },
+    "components/chat/file-preview-header.tsx": {
+      "max": 1
+    },
+    "components/chat/knowledge-source.tsx": {
+      "max": 1
+    },
+    "components/chat/listening-language-picker.tsx": {
+      "max": 1
+    },
+    "components/chat/live-mode-panel.tsx": {
+      "max": 5
+    },
+    "components/chat/mail-tab.tsx": {
+      "max": 3
+    },
+    "components/chat/meeting-recording-overlay.tsx": {
+      "max": 1
+    },
+    "components/chat/preview-pane.tsx": {
+      "max": 11
+    },
+    "components/chat/queued-prompt-list.tsx": {
+      "max": 3
+    },
+    "components/chat/runtime-picker.tsx": {
+      "max": 2
+    },
+    "components/chat/scheduled-tasks-sidebar.tsx": {
+      "max": 2
+    },
+    "components/knowledge/knowledge-document-reader.tsx": {
+      "max": 1
+    },
+    "components/knowledge/knowledge-documents.tsx": {
+      "max": 5
+    },
+    "components/knowledge/knowledge-hub.tsx": {
+      "max": 4
+    },
+    "components/knowledge/knowledge-source-link.tsx": {
+      "max": 1
+    },
+    "components/layout/project-settings/prompts-tab.tsx": {
+      "max": 3
+    },
+    "components/layout/project-settings/repository-tab.tsx": {
+      "max": 1
+    },
+    "components/layout/project-tree-multi-select.tsx": {
+      "max": 1
+    },
+    "components/layout/sandbox-endpoints.tsx": {
+      "max": 4
+    },
+    "components/layout/sandbox-info-dialog.tsx": {
+      "max": 10
+    },
+    "components/layout/sandbox-ssh.tsx": {
+      "max": 1
+    },
+    "components/markdown-content.tsx": {
+      "max": 4
+    },
+    "components/oauth/oauth-targets-field.tsx": {
+      "max": 1
+    },
+    "components/objective-explorer/events-tab.tsx": {
+      "max": 11
+    },
+    "components/objective-explorer/objective-dashboard.tsx": {
+      "max": 1
+    },
+    "components/objective-explorer/objective-explorer.tsx": {
+      "max": 1
+    },
+    "components/objective-explorer/runs-tab.tsx": {
+      "max": 11
+    },
+    "components/ObjectiveCard.tsx": {
+      "max": 10
+    },
+    "components/project-workspace-pane.tsx": {
+      "max": 1
+    },
+    "components/proposal-card.tsx": {
+      "max": 1
+    },
+    "components/settings/stage-alternatives.tsx": {
+      "max": 1
+    },
+    "components/settings/stage-editor.tsx": {
+      "max": 1
+    },
+    "components/share-dialog.tsx": {
+      "max": 1
+    },
+    "routes/admin.devices.tsx": {
+      "max": 1
+    },
+    "routes/admin.provider-accounts.tsx": {
+      "max": 1
+    },
+    "routes/costs.tsx": {
+      "max": 2
+    },
+    "routes/memory-review.tsx": {
+      "max": 3
+    },
+    "routes/objective.$projectId.$objectiveId.tsx": {
+      "max": 2
+    },
+    "routes/share.$token.tsx": {
+      "max": 5
+    },
+    "routes/users.tsx": {
+      "max": 3
+    }
+  }
+}

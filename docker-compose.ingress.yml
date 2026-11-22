@@ -1,0 +1,15 @@
+# Opt in through COMPOSE_FILE=docker-compose.yml:docker-compose.ingress.yml.
+# Reserve this Board address and allow only its /32 in CarapaBox's
+# INGRESS_HTTP_ALLOW_CIDRS. Never attach agent sandboxes to this network.
+services:
+  carapa-board:
+    environment:
+      BRAIN_INGRESS_HOST: ${BRAIN_INGRESS_HOST:-172.29.255.2}
+    networks:
+      brain_ingress:
+        ipv4_address: ${BOARD_INGRESS_IP:-172.29.255.4}
+
+networks:
+  brain_ingress:
+    external: true
+    name: ${BOARD_INGRESS_NETWORK:-carapa_ingress_edge}

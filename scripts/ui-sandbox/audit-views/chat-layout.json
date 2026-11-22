@@ -1,0 +1,141 @@
+{
+  "views": [
+    {
+      "name": "set-theme",
+      "route": "/account",
+      "ready": "[data-ui=theme-select]",
+      "steps": [
+        { "click": "[data-ui=theme-select]" },
+        { "click": "[role=option]:has-text(\"Light\")" },
+        { "waitFor": "[data-ui=theme-select]" }
+      ],
+      "scope": "[data-ui=theme-select]",
+      "viewports": ["1440x900"]
+    },
+    {
+      "name": "chat-messages",
+      "route": "/chat/ui-chat?conversationId=ui-chat-eval",
+      "ready": "[data-ui=chat-transcript-scroll]",
+      "scope": "[data-ui=chat-project-surface]",
+      "viewports": ["1440x900", "390x844"]
+    },
+    {
+      "name": "chat-composer",
+      "route": "/chat/ui-chat?conversationId=ui-chat-eval",
+      "ready": "[data-ui=chat-transcript-scroll]",
+      "steps": [{ "scrollIntoView": "[data-ui=chat-composer]" }],
+      "scope": "[data-ui=chat-composer]",
+      "viewports": ["1440x900", "390x844"]
+    },
+    {
+      "name": "workspace-files",
+      "route": "/chat/ui-chat?conversationId=ui-chat-eval",
+      "ready": "[data-ui=chat-transcript-scroll]",
+      "steps": [
+        {
+          "click": "[data-ui=header-workspace-toggle]",
+          "unless": "[data-ui=persistent-workspace-surface]"
+        },
+        {
+          "waitFor": "[data-ui=persistent-workspace-surface] [role=tab]:has-text(\"Files\")"
+        }
+      ],
+      "scope": "[data-ui=persistent-workspace-surface]",
+      "viewports": ["1440x900"]
+    },
+    {
+      "name": "workspace-changes",
+      "route": "/chat/ui-chat?conversationId=ui-chat-eval",
+      "ready": "[data-ui=chat-transcript-scroll]",
+      "steps": [
+        {
+          "click": "[data-ui=header-workspace-toggle]",
+          "unless": "[data-ui=persistent-workspace-surface]"
+        },
+        {
+          "waitFor": "[data-ui=persistent-workspace-surface] [role=tab]:has-text(\"Changes\")"
+        },
+        {
+          "click": "[data-ui=persistent-workspace-surface] [role=tab]:has-text(\"Changes\")"
+        },
+        { "wait": 800 }
+      ],
+      "scope": "[data-ui=persistent-workspace-surface]",
+      "viewports": ["1440x900"]
+    },
+    {
+      "name": "workspace-browser",
+      "route": "/chat/ui-chat?conversationId=ui-chat-eval",
+      "ready": "[data-ui=chat-transcript-scroll]",
+      "steps": [
+        {
+          "click": "[data-ui=header-workspace-toggle]",
+          "unless": "[data-ui=persistent-workspace-surface]"
+        },
+        {
+          "waitFor": "[data-ui=persistent-workspace-surface] [role=tab]:has-text(\"Browser\")"
+        },
+        {
+          "click": "[data-ui=persistent-workspace-surface] [role=tab]:has-text(\"Browser\")"
+        },
+        { "wait": 800 }
+      ],
+      "scope": "[data-ui=persistent-workspace-surface]",
+      "viewports": ["1440x900"]
+    },
+    {
+      "name": "workspace-bash",
+      "route": "/chat/ui-chat?conversationId=ui-chat-eval",
+      "ready": "[data-ui=chat-transcript-scroll]",
+      "steps": [
+        {
+          "click": "[data-ui=header-workspace-toggle]",
+          "unless": "[data-ui=persistent-workspace-surface]"
+        },
+        {
+          "waitFor": "[data-ui=persistent-workspace-surface] [role=tab]:has-text(\"Bash\")"
+        },
+        {
+          "click": "[data-ui=persistent-workspace-surface] [role=tab]:has-text(\"Bash\")"
+        },
+        { "wait": 1200 }
+      ],
+      "scope": "[data-ui=persistent-workspace-surface]",
+      "viewports": ["1440x900"]
+    },
+    {
+      "name": "sidebar",
+      "route": "/chat/ui-chat?conversationId=ui-chat-eval",
+      "ready": "[data-ui=chat-transcript-scroll]",
+      "scope": "[data-ui=global-sidebar]",
+      "viewports": ["1440x900"]
+    },
+    {
+      "name": "sidebar-mobile",
+      "route": "/chat/ui-chat?conversationId=ui-chat-eval",
+      "ready": "[data-ui=chat-transcript-scroll]",
+      "steps": [
+        { "click": "[data-ui=open-menu-trigger]" },
+        { "waitFor": "[data-ui=global-sidebar][role=dialog]" }
+      ],
+      "scope": "[data-ui=global-sidebar]",
+      "viewports": ["390x844"]
+    },
+    {
+      "name": "share-dialog",
+      "route": "/chat/ui-chat?conversationId=ui-chat-eval",
+      "ready": "[data-ui=chat-transcript-scroll]",
+      "steps": [
+        {
+          "click": "[data-ui=conversation-list-item][data-conversation-id=ui-chat-eval] button[aria-label=\"Conversation actions\"]"
+        },
+        { "waitFor": "[role=menu]" },
+        { "click": "[role=menuitem]:has-text(\"Share conversation\")" },
+        { "waitFor": "[role=dialog]" },
+        { "wait": 500 }
+      ],
+      "scope": "[role=dialog]",
+      "viewports": ["1440x900"]
+    }
+  ]
+}

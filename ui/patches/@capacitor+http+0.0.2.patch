@@ -1,0 +1,75 @@
+diff --git a/node_modules/@capacitor/http/android/build.gradle b/node_modules/@capacitor/http/android/build.gradle
+index 35ab45d..4db4884 100644
+--- a/node_modules/@capacitor/http/android/build.gradle
++++ b/node_modules/@capacitor/http/android/build.gradle
+@@ -4,19 +4,10 @@ ext {
+     androidxEspressoCoreVersion =  project.hasProperty('androidxEspressoCoreVersion') ? rootProject.ext.androidxEspressoCoreVersion : '3.2.0'
+ }
+ 
+-buildscript {
+-    repositories {
+-        google()
+-        jcenter()
+-    }
+-    dependencies {
+-        classpath 'com.android.tools.build:gradle:3.6.1'
+-    }
+-}
+-
+ apply plugin: 'com.android.library'
+ 
+ android {
++    namespace 'com.getcapacitor.plugin.http'
+     compileSdkVersion project.hasProperty('compileSdkVersion') ? rootProject.ext.compileSdkVersion : 29
+     defaultConfig {
+         minSdkVersion project.hasProperty('minSdkVersion') ? rootProject.ext.minSdkVersion : 21
+@@ -28,7 +19,7 @@ android {
+     buildTypes {
+         release {
+             minifyEnabled false
+-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
++            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+         }
+     }
+     lintOptions {
+@@ -38,7 +29,6 @@ android {
+ 
+ repositories {
+     google()
+-    jcenter()
+     mavenCentral()
+ }
+ 
+diff --git a/node_modules/@capacitor/http/android/src/main/AndroidManifest.xml b/node_modules/@capacitor/http/android/src/main/AndroidManifest.xml
+index 5b7a8ba..9957c84 100644
+--- a/node_modules/@capacitor/http/android/src/main/AndroidManifest.xml
++++ b/node_modules/@capacitor/http/android/src/main/AndroidManifest.xml
+@@ -1,5 +1,4 @@
+ 
+-  <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+-      package="com.getcapacitor.http.http">
++  <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+   </manifest>
+   
+\ No newline at end of file
+diff --git a/node_modules/@capacitor/http/android/src/main/java/com/getcapacitor/plugin/http/Http.java b/node_modules/@capacitor/http/android/src/main/java/com/getcapacitor/plugin/http/Http.java
+index 4d11970..e385f0c 100644
+--- a/node_modules/@capacitor/http/android/src/main/java/com/getcapacitor/plugin/http/Http.java
++++ b/node_modules/@capacitor/http/android/src/main/java/com/getcapacitor/plugin/http/Http.java
+@@ -10,7 +10,6 @@ import com.getcapacitor.NativePlugin;
+ import com.getcapacitor.Plugin;
+ import com.getcapacitor.PluginCall;
+ import com.getcapacitor.PluginMethod;
+-import com.getcapacitor.PluginRequestCodes;
+ 
+ import org.json.JSONException;
+ 
+@@ -214,7 +213,7 @@ public class Http extends Plugin {
+       String perm = permissions[i];
+       if(result == PackageManager.PERMISSION_DENIED) {
+         Log.d(getLogTag(), "User denied storage permission: " + perm);
+-        savedCall.error("User denied write permission needed to save files");
++        savedCall.reject("User denied write permission needed to save files");
+         this.freeSavedCall();
+         return;
+       }

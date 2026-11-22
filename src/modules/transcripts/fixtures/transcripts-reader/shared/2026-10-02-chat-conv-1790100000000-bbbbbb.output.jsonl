@@ -1,0 +1,7 @@
+{"id":"chat-1","type":"message","role":"user","content":"[AGENT_CONTEXT group_folder=x]\n<system-reminder>\nhidden reminder\n</system-reminder>\n[CHANNEL: direct]\n[INSTRUCTION: reply directly]\n[Shared browser: preview may expire]\n\n[INHERITED GROUP RULES]\nhidden rules\n[END INHERITED GROUP RULES]\n\nWhy is the kanban board slow?\n\n[CURRENT HUMAN CONTEXT]\nhidden human context","sender_name":"admin","created_at":"2026-10-02T10:00:00.000Z","conversation_id":"conv-1790100000000-bbbbbb"}
+{"type":"tool_call","id":"t1","status":"started","name":"Bash","category":"execute","input":{"command":"grep -rn slowpath src"},"agent_name":"claude:claude-opus-5-5"}
+{"type":"tool_call","id":"t1","status":"completed","name":"Bash","output":"src/a.ts:1"}
+{"id":"chat-2","type":"message","role":"assistant","content":"The board is slow because of the slowpath loop.","agent_name":"claude:claude-opus-5-5","created_at":"2026-10-02T10:01:00.000Z"}
+{"type":"turn_outcome","messageId":"chat-2","outcome":"completed"}
+{"id":"transcript-entry-9","telemetry":{"tok_input":1}}
+{"type":"turn_instruction_state","state":"idle"}

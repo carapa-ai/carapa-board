@@ -1,0 +1,3 @@
+{"id":"msg-1","task_id":"task-1790000000000-aaaaaa","role":"user","content":"Fix the flaky scheduler test","created_at":"2026-10-01T09:00:00.000Z"}
+{"id":"msg-2","task_id":"task-1790000000000-aaaaaa","role":"system","entry_type":"run_start","content":"","agent_name":"codex"}
+{"id":"msg-3","task_id":"task-1790000000000-aaaaaa","role":"assistant","content":"Patched the scheduler test.","agent_name":"codex","created_at":"2026-10-01T09:05:00.000Z"}

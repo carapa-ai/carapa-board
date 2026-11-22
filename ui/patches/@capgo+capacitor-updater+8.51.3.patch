@@ -1,0 +1,119 @@
+diff --git a/node_modules/@capgo/capacitor-updater/android/src/main/java/ee/forgr/capacitor_updater/CapacitorUpdaterPlugin.java b/node_modules/@capgo/capacitor-updater/android/src/main/java/ee/forgr/capacitor_updater/CapacitorUpdaterPlugin.java
+index 3614d77..930a48f 100644
+--- a/node_modules/@capgo/capacitor-updater/android/src/main/java/ee/forgr/capacitor_updater/CapacitorUpdaterPlugin.java
++++ b/node_modules/@capgo/capacitor-updater/android/src/main/java/ee/forgr/capacitor_updater/CapacitorUpdaterPlugin.java
+@@ -4228,6 +4228,18 @@ public class CapacitorUpdaterPlugin extends Plugin {
+     private boolean _reset(final Boolean toLastSuccessful, final Boolean usePendingBundle) {
+         return this.performReset(toLastSuccessful, usePendingBundle, false);
+     }
++    // CarapaBoard selects the embedded bundle before initial WebView navigation.
++    /** CarapaBoard's install flow needs to reset before stale web JavaScript loads. */
++    public boolean resetToBuiltinForCarapa() {
++        if (this.implementation == null) {
++            return false;
++        }
++        // Select the builtin path without reloading or waiting for
++        // notifyAppReady; this is called during bridge initialization before
++        // the first WebView navigation.
++        this.implementation.reset(true);
++        return this.implementation.isUsingBuiltin();
++    }
+ 
+     private boolean performReset(final Boolean toLastSuccessful, final Boolean usePendingBundle, final boolean internal) {
+         final BundleInfo fallback = this.implementation.getFallbackBundle();
+diff --git a/node_modules/@capgo/capacitor-updater/android/src/main/java/ee/forgr/capacitor_updater/DownloadService.java b/node_modules/@capgo/capacitor-updater/android/src/main/java/ee/forgr/capacitor_updater/DownloadService.java
+index 7f57cfa..bba680b 100644
+--- a/node_modules/@capgo/capacitor-updater/android/src/main/java/ee/forgr/capacitor_updater/DownloadService.java
++++ b/node_modules/@capgo/capacitor-updater/android/src/main/java/ee/forgr/capacitor_updater/DownloadService.java
+@@ -90,6 +90,14 @@ public class DownloadService extends Worker {
+     static {
+         sharedClient = new OkHttpClient.Builder()
+             .protocols(Arrays.asList(Protocol.HTTP_2, Protocol.HTTP_1_1))
++            // CarapaBoard: trust and hostname decisions come from the process-wide
++            // HttpsURLConnection defaults, which the app replaces with its per-server
++            // certificate pin policy (CarapaTls). They are read on every handshake and
++            // idle connections are not kept, so a changed pin list never meets a
++            // connection that was validated under the old one.
++            .sslSocketFactory(new CarapaDefaultSocketFactory(), carapaPlatformTrustManager())
++            .hostnameVerifier(carapaHostnameVerifier())
++            .connectionPool(new okhttp3.ConnectionPool(0, 1, TimeUnit.SECONDS))
+             .addInterceptor((chain) -> {
+                 Request originalRequest = chain.request();
+                 String userAgent = buildUserAgent(currentAppId, currentPluginVersion, currentVersionOs);
+@@ -99,6 +107,76 @@ public class DownloadService extends Worker {
+             .build();
+     }
+ 
++    // OkHttp's own host name check decides first. The HttpsURLConnection default is
++    // the app's pin verifier, which only adds an exact pin match on top of a platform
++    // verifier that rejects every name, so it is a fallback and never the first check.
++    private static javax.net.ssl.HostnameVerifier carapaHostnameVerifier() {
++        final javax.net.ssl.HostnameVerifier okHttp = new OkHttpClient().hostnameVerifier();
++        return (host, session) ->
++            okHttp.verify(host, session) || javax.net.ssl.HttpsURLConnection.getDefaultHostnameVerifier().verify(host, session);
++    }
++
++    // Only feeds OkHttp's certificate chain cleaner; the validation itself runs in
++    // the sockets of the default factory below.
++    private static javax.net.ssl.X509TrustManager carapaPlatformTrustManager() {
++        try {
++            javax.net.ssl.TrustManagerFactory factory = javax.net.ssl.TrustManagerFactory.getInstance(
++                javax.net.ssl.TrustManagerFactory.getDefaultAlgorithm()
++            );
++            factory.init((java.security.KeyStore) null);
++            for (javax.net.ssl.TrustManager manager : factory.getTrustManagers()) {
++                if (manager instanceof javax.net.ssl.X509TrustManager) return (javax.net.ssl.X509TrustManager) manager;
++            }
++        } catch (java.security.GeneralSecurityException e) {
++            throw new IllegalStateException(e);
++        }
++        throw new IllegalStateException("No platform X509TrustManager");
++    }
++
++    // Looks up HttpsURLConnection's current default socket factory for every socket.
++    private static class CarapaDefaultSocketFactory extends javax.net.ssl.SSLSocketFactory {
++
++        private static javax.net.ssl.SSLSocketFactory current() {
++            return javax.net.ssl.HttpsURLConnection.getDefaultSSLSocketFactory();
++        }
++
++        @Override
++        public String[] getDefaultCipherSuites() {
++            return current().getDefaultCipherSuites();
++        }
++
++        @Override
++        public String[] getSupportedCipherSuites() {
++            return current().getSupportedCipherSuites();
++        }
++
++        @Override
++        public java.net.Socket createSocket(java.net.Socket socket, String host, int port, boolean autoClose) throws IOException {
++            return current().createSocket(socket, host, port, autoClose);
++        }
++
++        @Override
++        public java.net.Socket createSocket(String host, int port) throws IOException {
++            return current().createSocket(host, port);
++        }
++
++        @Override
++        public java.net.Socket createSocket(String host, int port, java.net.InetAddress localHost, int localPort) throws IOException {
++            return current().createSocket(host, port, localHost, localPort);
++        }
++
++        @Override
++        public java.net.Socket createSocket(java.net.InetAddress host, int port) throws IOException {
++            return current().createSocket(host, port);
++        }
++
++        @Override
++        public java.net.Socket createSocket(java.net.InetAddress address, int port, java.net.InetAddress localAddress, int localPort)
++            throws IOException {
++            return current().createSocket(address, port, localAddress, localPort);
++        }
++    }
++
+     static String buildUserAgent(String appId, String pluginVersion, String versionOs) {
+         return (
+             "CapacitorUpdater/" +

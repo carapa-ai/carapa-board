@@ -1,0 +1,1 @@
+{"sessionId":"vscode-native-sanitized","creationDate":1787748000000,"requests":[{"requestId":"req-v1","message":{"text":"VS Code question"},"response":[{"value":"VS Code answer"},{"kind":"toolInvocationSerialized","toolId":"read_file"}]}]}

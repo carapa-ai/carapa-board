@@ -1,0 +1,4 @@
+# Production file<TAB>owned test files (space-separated).
+# Colocated *.test.* and *.spec.* files are discovered automatically; keep only
+# exceptional ownership here. Full CI remains the exhaustive dependency gate.
+src/modules/kanban/task/pipeline.ts	src/modules/kanban/task-pipeline.test.ts src/modules/kanban/testing.test.ts

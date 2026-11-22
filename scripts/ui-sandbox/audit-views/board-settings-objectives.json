@@ -1,0 +1,115 @@
+{
+  "views": [
+    {
+      "name": "set-theme",
+      "route": "/account",
+      "ready": "[data-ui=theme-select]",
+      "steps": [
+        { "click": "[data-ui=theme-select]" },
+        { "click": "[role=option]:has-text(\"Light\")" },
+        { "waitFor": "[data-ui=theme-select]" }
+      ],
+      "scope": "[data-ui=theme-select]",
+      "viewports": ["1440x900"]
+    },
+    {
+      "name": "board",
+      "route": "/board/ui-running",
+      "ready": "[data-ui=kanban-board-content]",
+      "scope": "[data-ui=kanban-project-layout]"
+    },
+    {
+      "name": "board-ab",
+      "route": "/board/ui-ab?taskId=ui-ab-parent",
+      "ready": "[data-ui=task-detail-header]",
+      "scope": "[role=dialog]:has([data-ui=task-detail-header])",
+      "viewports": ["1440x900"]
+    },
+    {
+      "name": "task-details",
+      "route": "/board/ui-running?taskId=ui-task-detail-eval",
+      "ready": "[data-ui=task-detail-header]",
+      "scope": "[role=dialog]:has([data-ui=task-detail-header])",
+      "steps": [
+        {
+          "click": "[data-ui=task-detail-tab][data-tab=details]"
+        }
+      ],
+      "densityScope": "[data-ui=task-detail-details-panel]"
+    },
+    {
+      "name": "task-history",
+      "route": "/board/ui-running?taskId=ui-task-detail-eval",
+      "ready": "[data-ui=task-detail-header]",
+      "scope": "[role=dialog]:has([data-ui=task-detail-header])",
+      "steps": [
+        {
+          "click": "[data-ui=task-detail-tab][data-tab=history]"
+        }
+      ],
+      "densityScope": "[data-ui=task-tab-content]",
+      "viewports": ["1440x900"]
+    },
+    {
+      "name": "stage-editor",
+      "route": "/board/ui-running",
+      "ready": "[data-ui=kanban-board-content]",
+      "steps": [
+        {
+          "hover": "[data-roving-row=ui-running]"
+        },
+        {
+          "click": "[data-ui=project-row-menu-trigger][data-project-id=ui-running]"
+        },
+        { "click": "[data-ui=project-menu-settings]" },
+        { "waitFor": "[data-ui=project-settings-dialog]" },
+        {
+          "click": "[data-ui=project-settings-tab-navigation] [role=tab]:has-text(\"Board\")"
+        },
+        { "waitFor": "[data-ui=stage-editor-stage]" }
+      ],
+      "scope": "[data-ui=project-settings-dialog]",
+      "viewports": ["1440x900"]
+    },
+    {
+      "name": "objectives-list",
+      "route": "/objectives/ui-objectives",
+      "ready": "[data-ui=objectives-project-layout]",
+      "scope": "[data-ui=objectives-project-layout]"
+    },
+    {
+      "name": "objective-page",
+      "route": "/objective/ui-objectives/ui-objective-active",
+      "ready": "[data-ui=objective-workspace-tabs]",
+      "viewports": ["1440x900"]
+    },
+    {
+      "name": "objective-runs",
+      "route": "/objective/ui-objectives/ui-objective-active",
+      "ready": "[data-ui=objective-workspace-tabs]",
+      "steps": [
+        {
+          "click": "[data-ui=objective-workspace-tabs] [role=tab]:has-text(\"Runs\")"
+        }
+      ],
+      "viewports": ["1440x900"]
+    },
+    {
+      "name": "objective-events",
+      "route": "/objective/ui-objectives/ui-objective-active",
+      "ready": "[data-ui=objective-workspace-tabs]",
+      "steps": [
+        {
+          "click": "[data-ui=objective-workspace-tabs] [role=tab]:has-text(\"Events\")"
+        }
+      ],
+      "viewports": ["1440x900"]
+    },
+    {
+      "name": "costs",
+      "route": "/costs",
+      "ready": "header:has-text(\"API Cost Report\")",
+      "viewports": ["1440x900"]
+    }
+  ]
+}

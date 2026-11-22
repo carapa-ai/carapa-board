@@ -1,0 +1,3 @@
+<user_query>Native Cursor text question</user_query>
+continued detail
+A: Native Cursor text answer

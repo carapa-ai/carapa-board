@@ -1,0 +1,18 @@
+{
+  "playwrightVersion": "1.66.0-next",
+  "sourceRepo": "https://github.com/carapa-ai/playwright",
+  "sourceCommit": "58ef715f6",
+  "sha256": {
+    "assets/codeMirrorModule--QdMvsKi.css": "20be824a82832b62cc04642d31da3c609fd280b23f1cdcb1e622c4f40aac5ab8",
+    "assets/codeMirrorModule-CRu8knpb.js": "c5493d03af4dbd2e641d92bc3f53e29d019dbc275785efde84524b972839bc54",
+    "assets/codicon-DCmgc-ay.ttf": "0f1d5219934e96e83b8db162d60b4d8c09b5de1e7d38031cbafe4a3c0f2889c9",
+    "assets/firefox-1bWoP6pv.svg": "3f3742d1e78c0db6c2d3531250f70c30675ee5310de32fa89befaf738c54efd0",
+    "assets/firefox-beta-k3eOH_eK.svg": "7eab5ffdc25903ba33a7202f7fffa1999f119c7be45a39e9e703c118904f917a",
+    "assets/firefox-nightly-Cp5nfeDT.svg": "f311c074b0fa999fcd6b73441301fb54ee87a48ff3bf05f318647928110476da",
+    "assets/index-BVV5TadV.css": "7d789e0965bc39721010a2c43dbbe646812518bda2781ac9e5ba586b60f04fda",
+    "assets/index-DfeZb4zb.js": "5bfe2b93b60f8c3f2f26815c68398cd4ffc23502747616bd498625e84831453b",
+    "assets/safari-na3_-uQk.svg": "80fd72ca5eb8545f1981277b31f4f92951d469d4efebd078e4086b676fe517dc",
+    "index.html": "bb000cb93158af81b0bba201d932337c3d741f1de82235518cd89abe4f8ed976",
+    "playwright-logo.svg": "511524a1c145819303a18fb71870a4307c3e740f9e9722f7686a2b42b0995b6c"
+  }
+}

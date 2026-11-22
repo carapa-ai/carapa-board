@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "carapa-board": {
+      "url": "http://api-relay:8080/mcp-relay/mcp/carapa-board",
+      "headers": {
+        "Authorization": "Bearer ${CARAPA_BOARD_API_TOKEN}"
+      }
+    }
+  }
+}

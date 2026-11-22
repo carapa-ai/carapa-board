@@ -1,0 +1,217 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://carapa.ai/schemas/board_agents.schema.json",
+  "title": "CarapaBoard v2 agent runtime catalog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "harnesses", "models", "defaults"],
+  "properties": {
+    "version": { "const": 2 },
+    "connections": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/connection" }
+    },
+    "harnesses": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "allOf": [{ "$ref": "#/$defs/v2Settings" }],
+        "required": ["label", "kind"],
+        "properties": {
+          "kind": { "enum": ["direct", "cli"] },
+          "sessionFamily": { "type": "string" },
+          "icon": {
+            "type": "string",
+            "minLength": 1,
+            "description": "UI icon image path or URL (SVG, PNG, or another browser-supported image)."
+          },
+          "discover": {
+            "description": "Generate this harness's models from discovery (board_agents.discovered.json). Other keys are binding settings applied to every generated binding.",
+            "allOf": [{ "$ref": "#/$defs/binding" }],
+            "properties": {
+              "account": {
+                "type": "string",
+                "description": "Provider account whose models this harness uses (anthropic, codex, antigravity, meta, xai)."
+              },
+              "from": {
+                "enum": ["account", "harness"],
+                "description": "\"harness\": use only the models the harness itself reports (matched to the account's list when known). Default \"account\": fall back to the account's list when the harness reports none."
+              },
+              "model": {
+                "type": "string",
+                "description": "Binding model template; ${id} is replaced by the discovered model name."
+              }
+            }
+          }
+        }
+      }
+    },
+    "models": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "allOf": [{ "$ref": "#/$defs/v2Settings" }],
+        "required": ["label", "bindings"],
+        "properties": {
+          "contextSize": { "type": "integer", "minimum": 1 },
+          "maxTokens": { "type": "integer", "minimum": 1 },
+          "fallbackModel": { "type": "string", "minLength": 1 },
+          "extraBody": { "type": "object" },
+          "capabilities": { "$ref": "#/$defs/capabilities" },
+          "reasoning": { "$ref": "#/$defs/reasoning" },
+          "bindings": {
+            "type": "object",
+            "minProperties": 1,
+            "additionalProperties": { "$ref": "#/$defs/binding" }
+          }
+        }
+      }
+    },
+    "defaults": {
+      "oneOf": [
+        {
+          "allOf": [
+            { "$ref": "#/$defs/selection" },
+            { "$ref": "#/$defs/v2Settings" }
+          ]
+        },
+        { "$ref": "#/$defs/defaultPolicy" }
+      ]
+    },
+    "presets": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [{ "$ref": "#/$defs/selection" }],
+        "required": ["label"],
+        "properties": { "label": { "type": "string" } }
+      }
+    }
+  },
+  "$defs": {
+    "selection": {
+      "type": "object",
+      "required": ["harnessId", "modelId"],
+      "properties": {
+        "harnessId": { "type": "string" },
+        "modelId": { "type": "string" },
+        "reasoning": { "type": "string" }
+      }
+    },
+    "defaultPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["chat", "kanban"],
+      "properties": {
+        "chat": { "$ref": "#/$defs/selection" },
+        "observer": { "$ref": "#/$defs/selection" },
+        "curator": {
+          "allOf": [{ "$ref": "#/$defs/selection" }],
+          "description": "HTTP/direct runtime exposed as the curator support runtime (falls back to defaults.chat)."
+        },
+        "reflector": { "$ref": "#/$defs/selection" },
+        "transcription": { "$ref": "#/$defs/selection" },
+        "imageOcr": {
+          "allOf": [{ "$ref": "#/$defs/selection" }],
+          "description": "Local vision runtime used to transcribe the text in images."
+        },
+        "peekFiles": {
+          "allOf": [{ "$ref": "#/$defs/selection" }],
+          "description": "HTTP/direct runtime used to condense file previews."
+        },
+        "commitMessage": {
+          "allOf": [{ "$ref": "#/$defs/selection" }],
+          "description": "HTTP/direct runtime used to generate Git commit messages."
+        },
+        "auditMemories": {
+          "allOf": [{ "$ref": "#/$defs/selection" }],
+          "description": "Sandbox-capable runtime used to audit project memories (falls back to the project's review stage runtime)."
+        },
+        "publicSafetyJudge": {
+          "allOf": [{ "$ref": "#/$defs/selection" }],
+          "description": "Direct runtime used to judge the safety of public chat content."
+        },
+        "kanban": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["fallback"],
+          "properties": {
+            "fallback": { "$ref": "#/$defs/selection" },
+            "stages": {
+              "type": "object",
+              "propertyNames": { "pattern": "^[a-z][a-z0-9_]*$" },
+              "additionalProperties": { "$ref": "#/$defs/selection" }
+            }
+          }
+        },
+        "settings": { "$ref": "#/$defs/v2Settings" }
+      }
+    },
+    "reasoning": {
+      "type": "object",
+      "required": ["options"],
+      "properties": {
+        "options": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "default": { "type": "string" },
+        "map": {
+          "type": "object",
+          "additionalProperties": { "type": ["string", "null"] }
+        },
+        "envVar": { "type": "string" }
+      }
+    },
+    "capabilities": {
+      "type": "array",
+      "items": { "enum": ["image", "audio", "video"] },
+      "uniqueItems": true
+    },
+    "connection": {
+      "allOf": [{ "$ref": "#/$defs/v2Settings" }],
+      "properties": { "disabled": { "type": "boolean" } }
+    },
+    "binding": {
+      "allOf": [{ "$ref": "#/$defs/v2Settings" }],
+      "properties": {
+        "connection": { "type": "string" },
+        "contextSize": { "type": "integer" },
+        "maxTokens": { "type": "integer" },
+        "extraBody": { "type": "object" },
+        "capabilities": { "$ref": "#/$defs/capabilities" },
+        "reasoning": { "$ref": "#/$defs/reasoning" }
+      }
+    },
+    "v2Settings": {
+      "type": "object",
+      "properties": {
+        "label": { "type": "string" },
+        "baseUrl": { "type": "string" },
+        "model": { "type": "string" },
+        "agentCmd": { "type": "string" },
+        "agent": { "type": "string" },
+        "apiKey": { "type": "string" },
+        "wireApi": { "enum": ["chat_completions", "responses"] },
+        "env": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "bare": { "type": "boolean" },
+        "apiFormat": { "enum": ["openai", "ollama"] },
+        "locality": {
+          "enum": ["local", "remote"],
+          "description": "Whether this runtime keeps content on this host. Resolved binding -> model -> connection -> harness -> defaults."
+        },
+        "contextSize": { "type": "integer" },
+        "maxTokens": { "type": "integer" },
+        "extraBody": { "type": "object" },
+        "topP": { "type": "number" },
+        "topK": { "type": "number" },
+        "frequencyPenalty": { "type": "number" },
+        "presencePenalty": { "type": "number" },
+        "temperature": { "type": "number" }
+      }
+    }
+  }
+}

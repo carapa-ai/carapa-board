@@ -1,0 +1,67 @@
+/* Theme-aware overrides for react-diff-view (its defaults are light-theme and
+   render invisible text on our dark background). Scoped to .cb-diff so they
+   don't leak. Two-class specificity beats the library's single-class rules. */
+.cb-diff .diff {
+  background: transparent;
+  color: var(--foreground);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+}
+.cb-diff .diff-gutter {
+  color: var(--muted-foreground);
+  background: transparent;
+}
+.cb-diff .diff-code {
+  color: var(--foreground);
+}
+.cb-diff .diff-gutter-col {
+  width: 3rem;
+}
+
+/* Inserted/deleted row fills are translucent color-mix percentages on
+   transparent, so they read on both light and dark surfaces — no theme swap. */
+.cb-diff .diff-code-insert {
+  background-color: color-mix(in srgb, #22c55e 14%, transparent);
+}
+.cb-diff .diff-gutter-insert {
+  background-color: color-mix(in srgb, #22c55e 22%, transparent);
+  color: var(--foreground);
+}
+.cb-diff .diff-code-insert .diff-code-edit {
+  background-color: color-mix(in srgb, #22c55e 32%, transparent);
+}
+
+/* Deleted lines */
+.cb-diff .diff-code-delete {
+  background-color: color-mix(in srgb, #ef4444 14%, transparent);
+}
+.cb-diff .diff-gutter-delete {
+  background-color: color-mix(in srgb, #ef4444 22%, transparent);
+  color: var(--foreground);
+}
+.cb-diff .diff-code-delete .diff-code-edit {
+  background-color: color-mix(in srgb, #ef4444 32%, transparent);
+}
+
+/* Hunk header rows */
+.cb-diff .diff-hunk-header,
+.cb-diff .diff-decoration {
+  background-color: var(--muted);
+  color: var(--muted-foreground);
+}
+.cb-diff .diff-hunk-header-content {
+  color: var(--muted-foreground);
+}
+
+.cb-change-type {
+  border: 1px solid var(--border);
+  border-radius: 0.25rem;
+  /* >= 4.5:1 on the file row's bg-muted/50 (muted-foreground measures 4.07:1). */
+  color: color-mix(in oklab, var(--foreground) 70%, transparent);
+  flex-shrink: 0;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 0.2rem 0.35rem;
+}

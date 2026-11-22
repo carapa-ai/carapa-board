@@ -1,0 +1,174 @@
+import groovy.json.JsonSlurper
+
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+def buildCommit = System.getenv("BUILD_COMMIT") ?: "unknown"
+def shellVersion = new JsonSlurper().parse(file('../native-shell-version.json')).versionCode as int
+def otaBuiltinVersion = System.getenv("ANDROID_OTA_BUILTIN_VERSION") ?: "builtin"
+def otaBuiltinGeneration = System.getenv("ANDROID_OTA_BUILTIN_GENERATION") ?: "0"
+def otaPublicKey = System.getenv("ANDROID_OTA_PUBLIC_KEY") ?: ""
+def buildConfigString = { value -> '"' + value.replace('\\', '\\\\').replace('"', '\\"') + '"' }
+def versionNameOverride = System.getenv("ANDROID_VERSION_NAME")?.trim()
+
+// Release signing: a Java properties file outside the repository holds
+// storeFile, storePassword, keyAlias and keyPassword. Debug tasks never read it;
+// release packaging tasks fail (see taskGraph.whenReady below) when it is unusable.
+// Messages name paths and keys, never values.
+def releaseSigningVariable = "ANDROID_RELEASE_KEYSTORE_PROPERTIES"
+def releaseSigningProblem = null
+def releaseSigningValues = null
+def releaseSigningHelp = "Set ${releaseSigningVariable} to a properties file outside the repository; see docs/android-play-release.md section 1."
+try {
+    def propertiesPath = System.getenv(releaseSigningVariable)?.trim()
+    if (!propertiesPath) {
+        throw new GradleException("${releaseSigningVariable} is not set. ${releaseSigningHelp}")
+    }
+    def repositoryRoot = rootProject.projectDir.parentFile.parentFile.canonicalFile.toPath()
+    def propertiesFile = new File(propertiesPath).canonicalFile
+    if (propertiesFile.toPath().startsWith(repositoryRoot)) {
+        throw new GradleException("${releaseSigningVariable} points inside the repository (${propertiesFile}). Keep the properties file outside the working tree. ${releaseSigningHelp}")
+    }
+    if (!propertiesFile.isFile()) {
+        throw new GradleException("${releaseSigningVariable} points to a missing file (${propertiesFile}). ${releaseSigningHelp}")
+    }
+    def properties = new Properties()
+    propertiesFile.withInputStream { properties.load(it) }
+    ["storeFile", "storePassword", "keyAlias", "keyPassword"].each { key ->
+        if (!properties.getProperty(key)?.trim()) {
+            throw new GradleException("Key '${key}' is missing or empty in ${propertiesFile}. ${releaseSigningHelp}")
+        }
+    }
+    def storeFile = new File(properties.getProperty("storeFile").trim())
+    if (!storeFile.isAbsolute()) {
+        storeFile = new File(propertiesFile.parentFile, storeFile.path)
+    }
+    storeFile = storeFile.canonicalFile
+    if (storeFile.toPath().startsWith(repositoryRoot)) {
+        throw new GradleException("storeFile in ${propertiesFile} points inside the repository (${storeFile}). Keep the keystore outside the working tree. ${releaseSigningHelp}")
+    }
+    if (!storeFile.isFile()) {
+        throw new GradleException("The keystore file named by storeFile in ${propertiesFile} does not exist (${storeFile}). ${releaseSigningHelp}")
+    }
+    releaseSigningValues = [
+        storeFile    : storeFile,
+        storePassword: properties.getProperty("storePassword"),
+        keyAlias     : properties.getProperty("keyAlias").trim(),
+        keyPassword  : properties.getProperty("keyPassword"),
+    ]
+} catch (GradleException e) {
+    releaseSigningProblem = e.message
+}
+
+android {
+    namespace = "ai.carapa.board"
+    compileSdk = rootProject.ext.compileSdkVersion
+    ndkVersion = '28.2.13676358'
+    defaultConfig {
+        applicationId "ai.carapa.board"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode shellVersion
+        versionName versionNameOverride ? versionNameOverride : "1.0-${buildCommit}"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField "String", "ANDROID_OTA_BUILTIN_VERSION", buildConfigString(otaBuiltinVersion)
+        buildConfigField "int", "ANDROID_OTA_BUILTIN_GENERATION", otaBuiltinGeneration
+        buildConfigField "String", "ANDROID_OTA_PUBLIC_KEY", buildConfigString(otaPublicKey)
+        aaptOptions {
+             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+        externalNativeBuild {
+            cmake {
+                abiFilters 'arm64-v8a'
+            }
+        }
+    }
+    // On-device Whisper (arm64 only; other ABIs report local transcription
+    // as unsupported). See app/src/main/cpp/CMakeLists.txt.
+    externalNativeBuild {
+        cmake {
+            path = file('src/main/cpp/CMakeLists.txt')
+            version = '3.22.1'
+        }
+    }
+    signingConfigs {
+        release {
+            if (releaseSigningValues != null) {
+                storeFile releaseSigningValues.storeFile
+                storePassword releaseSigningValues.storePassword
+                keyAlias releaseSigningValues.keyAlias
+                keyPassword releaseSigningValues.keyPassword
+            }
+        }
+    }
+    buildTypes {
+        release {
+            if (releaseSigningValues != null) {
+                signingConfig signingConfigs.release
+            }
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    buildFeatures {
+        buildConfig true
+    }
+}
+
+repositories {
+    flatDir{
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation "androidx.core:core-ktx:1.13.1"
+    implementation "androidx.security:security-crypto:1.1.0-alpha06"
+    // BiometricPrompt with DEVICE_CREDENTIAL fallback (the user's screen-lock
+    // PIN/pattern/password). Capacitor-native-biometric pulls androidx.biometric
+    // in transitively but doesn't re-expose its types, so declare it here so
+    // CarapaBridgePlugin can reference BiometricPrompt directly.
+    implementation "androidx.biometric:biometric:1.2.0-alpha05"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0"
+    // Pulled transitively by capacitor-push-notifications via `implementation`,
+    // so its types aren't visible here unless we declare it directly.
+    // Needed for CarapaMessagingService to extend FirebaseMessagingService and
+    // reference RemoteMessage. Version must match the plugin's pin.
+    implementation "com.google.firebase:firebase-messaging:25.0.1"
+    implementation "androidx.media3:media3-exoplayer:1.4.1"
+    implementation "androidx.media3:media3-session:1.4.1"
+    implementation project(':capacitor-android')
+    testImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+    implementation project(':capacitor-cordova-android-plugins')
+}
+
+apply from: 'capacitor.build.gradle'
+
+// Firebase is required for every variant: a build without google-services.json
+// would silently ship an APK that cannot receive push notifications.
+def servicesJSON = file('google-services.json')
+if (!servicesJSON.exists() || servicesJSON.length() == 0) {
+    throw new GradleException(
+        "Missing or empty ${servicesJSON.path}. Push notifications require Firebase, " +
+        "so every build needs this file. See docs/fcm-setup.md section 2."
+    )
+}
+apply plugin: 'com.google.gms.google-services'
+
+// Fail before any work when a release artifact is requested without usable signing.
+gradle.taskGraph.whenReady { graph ->
+    def releasePackaging = graph.allTasks.any {
+        it.project == project && it.name ==~ /(bundle|assemble|package|sign|validateSigning)Release.*/
+    }
+    if (releasePackaging && releaseSigningProblem != null) {
+        throw new GradleException(releaseSigningProblem)
+    }
+}
